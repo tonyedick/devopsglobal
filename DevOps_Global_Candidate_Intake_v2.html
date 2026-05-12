@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>DevOps.global — Candidate Intake</title>
+
+<!--
+  =======================================================================
+  CONFIG — set these two values, then deploy.
+  =======================================================================
+  EDGE_FUNCTION_URL : the public URL of your Supabase Edge Function
+                      e.g. https://YOUR-REF.supabase.co/functions/v1/intake-submit
+  TURNSTILE_SITE_KEY: the public site key from Cloudflare Turnstile
+                      (NOT the secret key — that lives in Supabase env vars)
+  =======================================================================
+-->
+<script>
+  window.DEVOPS_GLOBAL_CONFIG = {
+    EDGE_FUNCTION_URL:  "https://YOUR-PROJECT-REF.supabase.co/functions/v1/intake-submit",
+    TURNSTILE_SITE_KEY: "YOUR_TURNSTILE_SITE_KEY",
+  };
+</script>
+
+<!-- Cloudflare Turnstile loader. Subresource integrity not yet supported by Cloudflare for this script. -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<style>
+  :root {
+    color-scheme: light;
+    --navy: #0F2A44;
+    --navy-light: #1F4E78;
+    --accent: #2E75B6;
+    --bg: #F6F8FB;
+    --card: #FFFFFF;
+    --text: #1A2332;
+    --muted: #5A6B82;
+    --border: #D8E0EA;
+    --good: #2E7D32;
+    --good-bg: #E8F5E9;
+    --warn: #F9A825;
+    --bad: #C62828;
+    --bad-bg: #FFEBEE;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .header {
+    background: var(--navy);
+    color: white;
+    padding: 36px 24px 28px;
+    text-align: center;
+  }
+  .header h1 { margin: 0 0 6px; font-size: 28px; font-weight: 700; letter-spacing: -0.3px; }
+  .header .tag {
+    margin: 0; font-size: 13px; opacity: 0.85;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .container { max-width: 760px; margin: -24px auto 48px; padding: 0 16px; }
+  .intro {
+    background: var(--card); border-radius: 10px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 12px rgba(15,42,68,0.06);
+    margin-bottom: 24px; border-left: 4px solid var(--accent);
+  }
+  .intro h2 { margin: 0 0 8px; color: var(--navy); font-size: 18px; }
+  .intro p, .intro ol { color: var(--muted); font-size: 14px; margin: 6px 0; }
+  .intro ol { padding-left: 20px; }
+  .intro ol li { margin-bottom: 4px; }
+  .form {
+    background: var(--card); border-radius: 10px;
+    padding: 8px 24px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 12px rgba(15,42,68,0.06);
+  }
+  .section { padding: 18px 0; border-bottom: 1px solid var(--border); }
+  .section:last-of-type { border-bottom: none; }
+  .section h3 {
+    margin: 0 0 12px; color: var(--navy-light); font-size: 15px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+  .row.single { grid-template-columns: 1fr; }
+  @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--navy); }
+  .field .hint { font-size: 12px; color: var(--muted); font-weight: 400; font-style: italic; }
+  .field input, .field select, .field textarea {
+    padding: 9px 11px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: white; color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(46,117,182,0.15);
+  }
+  .field textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+  .field input[aria-invalid="true"], .field select[aria-invalid="true"], .field textarea[aria-invalid="true"] {
+    border-color: var(--bad);
+    box-shadow: 0 0 0 3px rgba(198,40,40,0.12);
+  }
+  .field .err { font-size: 12px; color: var(--bad); margin-top: 2px; display: none; }
+  .field .err.show { display: block; }
+  .field .required { color: var(--bad); }
+  .checkbox-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin: 8px 0; font-size: 14px; color: var(--text);
+  }
+  .checkbox-row input { margin-top: 3px; }
+
+  /* Honeypot — visually + a11y hidden but in DOM so bots find and fill it */
+  .honeypot {
+    position: absolute !important;
+    left: -10000px !important;
+    top: auto !important;
+    width: 1px !important; height: 1px !important;
+    overflow: hidden !important;
+  }
+
+  .file-drop {
+    border: 1.5px dashed var(--border); border-radius: 8px;
+    padding: 16px; text-align: center; cursor: pointer;
+    background: #FAFCFE;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .file-drop:hover, .file-drop.drag {
+    border-color: var(--accent); background: #EFF6FC;
+  }
+  .file-drop input { display: none; }
+  .file-drop .icon { font-size: 22px; color: var(--accent); }
+  .file-drop .main { font-size: 14px; font-weight: 600; color: var(--navy); margin-top: 6px; }
+  .file-drop .sub  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .file-info {
+    margin-top: 8px; padding: 8px 12px; background: var(--good-bg);
+    border-radius: 6px; font-size: 13px; color: var(--good); display: none;
+    align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .file-info.show { display: flex; }
+  .file-info .clear { color: var(--bad); cursor: pointer; font-weight: 600; }
+
+  .actions {
+    margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  }
+  button {
+    padding: 11px 22px; font-size: 14px; font-weight: 600;
+    border: none; border-radius: 6px; cursor: pointer;
+    font-family: inherit; transition: opacity 0.15s;
+  }
+  button:hover:not(:disabled) { opacity: 0.92; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary  { background: var(--navy);  color: white; }
+  .btn-secondary{ background: #EFF4FA; color: var(--navy); }
+
+  .turnstile-wrap { margin-top: 16px; min-height: 65px; }
+
+  .global-error, .global-success {
+    margin-top: 18px; padding: 14px 16px;
+    border-radius: 8px; font-size: 14px; display: none;
+  }
+  .global-error.show, .global-success.show { display: block; }
+  .global-error   { background: var(--bad-bg);  color: var(--bad);  border: 1px solid var(--bad); }
+  .global-success { background: var(--good-bg); color: var(--good); border: 1px solid var(--good); }
+
+  .submitting {
+    display: none; align-items: center; gap: 8px;
+    color: var(--muted); font-size: 13px;
+  }
+  .submitting.show { display: inline-flex; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .footer {
+    text-align: center; margin-top: 28px;
+    color: var(--muted); font-size: 12px;
+  }
+  .footer strong { color: var(--navy); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>DevOps.global</h1>
+  <p class="tag">Verified · Prepared · Supported · Ready to deploy</p>
+</div>
+
+<div class="container">
+  <div class="intro">
+    <h2>Candidate intake</h2>
+    <p>Thank you for your interest in DevOps.global, a premium talent agency for verified tech talent and Core Teams (Frontend, Backend, DevOps).</p>
+    <p>This short form takes about 5–7 minutes. Your data is stored securely and is only used by our internal recruiting team.</p>
+    <p>Before you are introduced to any client, your profile goes through our internal quality process:</p>
+    <ol>
+      <li>Recruiting Check</li>
+      <li>Technical Fit Review</li>
+      <li>Interview preparation with our Jobcoach</li>
+    </ol>
+    <p><strong>We will always ask your permission before introducing your profile to any company.</strong></p>
+  </div>
+
+  <form class="form" id="intakeForm" autocomplete="on" novalidate>
+
+    <!-- Honeypot: real users never see or fill this -->
+    <div class="honeypot" aria-hidden="true">
+      <label>Company website (leave blank)
+        <input type="text" name="company_url" tabindex="-1" autocomplete="off">
+      </label>
+    </div>
+
+    <div class="section">
+      <h3>1. Basic details</h3>
+      <div class="row">
+        <div class="field">
+          <label>Full name <span class="required">*</span></label>
+          <input type="text" name="name" required maxlength="120" autocomplete="name">
+          <span class="err" data-err></span>
+        </div>
+        <div class="field">
+          <label>Email <span class="required">*</span></label>
+          <input type="email" name="email" required maxlength="254" autocomplete="email">
+          <span class="err" data-err></span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Phone / WhatsApp</label>
+          <input type="tel" name="phone" maxlength="32" placeholder="With country code, e.g. +234 803 …" autocomplete="tel">
+          <span class="err" data-err></span>
+        </div>
+        <div class="field">
+          <label>LinkedIn profile URL <span class="required">*</span></label>
+          <input type="url" name="linkedin" required maxlength="300" placeholder="https://www.linkedin.com/in/…" pattern="^https://([a-z0-9-]+\.)?linkedin\.com/.*">
+          <span class="err" data-err></span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Country / City <span class="required">*</span></label>
+          <input type="text" name="location" required maxlength="120" placeholder="e.g. Lagos, Nigeria">
+        </div>
+        <div class="field">
+          <label>Time zone <span class="required">*</span></label>
+          <input type="text" name="timezone" required maxlength="40" placeholder="e.g. WAT, CET, EST">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>2. Role & Experience</h3>
+      <div class="row">
+        <div class="field">
+          <label>Current role <span class="required">*</span></label>
+          <input type="text" name="current_role" required maxlength="120">
+        </div>
+        <div class="field">
+          <label>Desired role <span class="required">*</span></label>
+          <select name="desired_role" required>
+            <option value="">-- choose one --</option>
+            <option>DevOps Engineer</option>
+            <option>Cloud Engineer</option>
+            <option>Site Reliability Engineer</option>
+            <option>Platform Engineer</option>
+            <option>Kubernetes Engineer</option>
+            <option>Terraform Engineer</option>
+            <option>Frontend Engineer</option>
+            <option>Backend Engineer</option>
+            <option>Full Stack Engineer</option>
+            <option>Core Team Member (FE+BE+DevOps)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Years of relevant experience <span class="required">*</span></label>
+          <input type="number" name="years" min="0" max="50" required>
+        </div>
+        <div class="field">
+          <label>Languages you speak professionally <span class="required">*</span></label>
+          <input type="text" name="languages" required maxlength="200" placeholder="e.g. English (C1), German (B2)">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>3. Technical skills</h3>
+      <div class="row single">
+        <div class="field">
+          <label>Top 3–5 technical skills <span class="required">*</span> <span class="hint">— comma-separated</span></label>
+          <input type="text" name="main_skills" required maxlength="500" placeholder="e.g. Kubernetes, Terraform, AWS, Go, CI/CD">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Frontend skills <span class="hint">— if applicable</span></label>
+          <input type="text" name="frontend" maxlength="300" placeholder="React / Angular / Vue / TS …">
+        </div>
+        <div class="field">
+          <label>Backend skills <span class="hint">— if applicable</span></label>
+          <input type="text" name="backend" maxlength="300" placeholder="Node / Java / Python / Go / .NET …">
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label>DevOps / Cloud skills <span class="hint">— if applicable</span></label>
+          <input type="text" name="devops" maxlength="300" placeholder="AWS / Azure / GCP / K8s / Terraform / CI/CD …">
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label>One project you're most proud of <span class="required">*</span> <span class="hint">— 2–4 sentences</span></label>
+          <textarea name="project" required maxlength="2000" rows="4"></textarea>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Portfolio URL</label>
+          <input type="url" name="portfolio" maxlength="300" placeholder="https://…">
+        </div>
+        <div class="field">
+          <label>GitHub URL</label>
+          <input type="url" name="github" maxlength="300" placeholder="https://github.com/…">
+        </div>
+      </div>
+
+      <div class="row single" style="margin-top: 6px;">
+        <div class="field">
+          <label>Upload your CV <span class="hint">— PDF or DOCX only, max 10 MB</span></label>
+          <label class="file-drop" id="fileDrop">
+            <div class="icon">⬆</div>
+            <div class="main">Click to choose a file, or drag & drop here</div>
+            <div class="sub">Accepted: .pdf, .docx — uploaded securely over HTTPS</div>
+            <input type="file" name="cv" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+          </label>
+          <div class="file-info" id="fileInfo">
+            <span id="fileLabel"></span>
+            <span class="clear" id="fileClear">Remove</span>
+          </div>
+          <span class="err" data-err></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>4. Availability & commercials</h3>
+      <div class="row">
+        <div class="field">
+          <label>Availability <span class="required">*</span> <span class="hint">— notice period or start date</span></label>
+          <input type="text" name="availability" required maxlength="200" placeholder="e.g. 4 weeks notice / available immediately">
+        </div>
+        <div class="field">
+          <label>Current status <span class="required">*</span></label>
+          <select name="status" required>
+            <option value="">-- choose one --</option>
+            <option>Employed - not actively looking</option>
+            <option>Employed - open to opportunities</option>
+            <option>Employed - actively looking</option>
+            <option>Freelancing</option>
+            <option>Between roles</option>
+            <option>On notice period</option>
+            <option>On the bench</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Salary / rate expectation <span class="required">*</span> <span class="hint">— include currency + period</span></label>
+          <input type="text" name="salary" required maxlength="100" placeholder="e.g. $4,500/month or €55/hour">
+        </div>
+        <div class="field">
+          <label>Engagement type</label>
+          <select name="engagement">
+            <option value="">-- choose one --</option>
+            <option>Full-time</option>
+            <option>Part-time</option>
+            <option>Contract / Freelance</option>
+            <option>Open to either</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Preferred work model <span class="required">*</span></label>
+          <select name="work_model" required>
+            <option value="">-- choose one --</option>
+            <option>Remote only</option>
+            <option>Hybrid</option>
+            <option>Onsite</option>
+            <option>Remote + open to relocation</option>
+            <option>Relocation only</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Other interview processes?</label>
+          <select name="other_processes">
+            <option value="">-- choose one --</option>
+            <option>No</option>
+            <option>Yes — early stage</option>
+            <option>Yes — final stages</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>5. Communication readiness</h3>
+      <div class="row">
+        <div class="field">
+          <label>English level <span class="required">*</span></label>
+          <select name="english_level" required>
+            <option value="">-- choose one --</option>
+            <option>A2 — basic</option>
+            <option>B1 — intermediate</option>
+            <option>B2 — upper intermediate</option>
+            <option>C1 — advanced</option>
+            <option>C2 / native</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Comfortable interviewing in English? <span class="required">*</span></label>
+          <select name="english_interview" required>
+            <option value="">-- choose one --</option>
+            <option>Yes — fully comfortable</option>
+            <option>Yes — with brief prep</option>
+            <option>Prefer some Jobcoach prep first</option>
+            <option>Not yet</option>
+          </select>
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label>Worked with international teams before? <span class="hint">— briefly describe</span></label>
+          <textarea name="international" maxlength="500" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>6. Consent</h3>
+      <label class="checkbox-row">
+        <input type="checkbox" name="consent_pool" required value="true">
+        <span>I'm comfortable with DevOps.global keeping my profile in their internal talent pool for suitable opportunities. <span class="required">*</span></span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="consent_intro" required value="true">
+        <span>I understand DevOps.global will ask my permission before introducing my profile to any company. <span class="required">*</span></span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="consent_jobcoach" value="true">
+        <span>I'm open to a short preparation session with the DevOps.global Jobcoach before any client interview.</span>
+      </label>
+    </div>
+
+    <div class="section">
+      <h3>7. Anything else?</h3>
+      <div class="field">
+        <textarea name="notes" maxlength="1000" rows="3" placeholder="Optional — anything that helps us match you to the right opportunity."></textarea>
+      </div>
+    </div>
+
+    <!-- Cloudflare Turnstile widget -->
+    <div class="turnstile-wrap">
+      <div class="cf-turnstile" id="turnstileWidget"></div>
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn-primary" id="submitBtn">Submit my profile</button>
+      <button type="reset" class="btn-secondary" id="resetBtn">Clear form</button>
+      <span class="submitting" id="submittingMsg"><span class="spinner"></span> Submitting securely…</span>
+    </div>
+
+    <div class="global-error"   id="globalError"></div>
+    <div class="global-success" id="globalSuccess"></div>
+
+  </form>
+
+  <p class="footer">
+    DevOps.global — <strong>Premium Talent Agency</strong><br>
+    Submissions are stored securely on our internal systems. By submitting, you consent only to the internal review process described above; no data is shared with any client without your prior approval.
+  </p>
+</div>
+
+<script>
+(() => {
+  const cfg = window.DEVOPS_GLOBAL_CONFIG;
+  if (!cfg.EDGE_FUNCTION_URL || cfg.EDGE_FUNCTION_URL.includes("YOUR-PROJECT-REF")) {
+    console.warn("DEVOPS_GLOBAL_CONFIG.EDGE_FUNCTION_URL is not configured.");
+  }
+
+  const form          = document.getElementById('intakeForm');
+  const submitBtn     = document.getElementById('submitBtn');
+  const resetBtn      = document.getElementById('resetBtn');
+  const submittingMsg = document.getElementById('submittingMsg');
+  const errorBox      = document.getElementById('globalError');
+  const successBox    = document.getElementById('globalSuccess');
+
+  const fileDrop  = document.getElementById('fileDrop');
+  const fileInput = fileDrop.querySelector('input[type=file]');
+  const fileInfo  = document.getElementById('fileInfo');
+  const fileLabel = document.getElementById('fileLabel');
+  const fileClear = document.getElementById('fileClear');
+
+  const MAX_FILE = 10 * 1024 * 1024;
+  const ALLOWED_TYPES = new Set([
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ]);
+
+  // ---------- File handling ----------
+  fileDrop.addEventListener('dragover', (e) => { e.preventDefault(); fileDrop.classList.add('drag'); });
+  fileDrop.addEventListener('dragleave', ()  => fileDrop.classList.remove('drag'));
+  fileDrop.addEventListener('drop',  (e) => {
+    e.preventDefault();
+    fileDrop.classList.remove('drag');
+    if (e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      onFileChosen();
+    }
+  });
+  fileInput.addEventListener('change', onFileChosen);
+  fileClear.addEventListener('click',  (e) => {
+    e.preventDefault();
+    fileInput.value = '';
+    fileInfo.classList.remove('show');
+  });
+
+  function onFileChosen() {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) { fileInfo.classList.remove('show'); return; }
+    if (f.size > MAX_FILE) {
+      showError("Your CV exceeds the 10 MB limit. Please compress or resave.");
+      fileInput.value = ''; fileInfo.classList.remove('show'); return;
+    }
+    if (!ALLOWED_TYPES.has(f.type)) {
+      showError("Only PDF or DOCX files are accepted.");
+      fileInput.value = ''; fileInfo.classList.remove('show'); return;
+    }
+    clearError();
+    fileLabel.textContent = `${f.name} • ${(f.size / 1024).toFixed(0)} KB`;
+    fileInfo.classList.add('show');
+  }
+
+  // ---------- Turnstile ----------
+  let turnstileWidgetId = null;
+  function renderTurnstile() {
+    if (!window.turnstile) { setTimeout(renderTurnstile, 200); return; }
+    turnstileWidgetId = window.turnstile.render('#turnstileWidget', {
+      sitekey: cfg.TURNSTILE_SITE_KEY,
+      action:  'intake_submit',
+      theme:   'light',
+    });
+  }
+  renderTurnstile();
+
+  // ---------- Validation ----------
+  function clearFieldErrors() {
+    form.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.setAttribute('aria-invalid', 'false'));
+    form.querySelectorAll('.err.show').forEach((el) => { el.classList.remove('show'); el.textContent = ''; });
+  }
+  function markFieldError(name, msg) {
+    const el = form.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    el.setAttribute('aria-invalid', 'true');
+    const err = el.parentElement.querySelector('.err');
+    if (err) { err.textContent = msg; err.classList.add('show'); }
+  }
+
+  function validateClient(form) {
+    clearFieldErrors();
+    const errors = [];
+
+    function require(name, label) {
+      const v = (form.get(name) ?? '').toString().trim();
+      if (!v) { errors.push([name, `${label} is required.`]); return null; }
+      return v;
+    }
+
+    const name        = require('name', 'Full name');
+    const email       = require('email', 'Email');
+    const linkedin    = require('linkedin', 'LinkedIn URL');
+    require('location', 'Country / city');
+    require('timezone', 'Time zone');
+    require('current_role', 'Current role');
+    require('desired_role', 'Desired role');
+    const years       = require('years', 'Years of experience');
+    require('languages', 'Languages');
+    require('main_skills', 'Main skills');
+    require('project', 'Project');
+    require('availability', 'Availability');
+    require('status', 'Current status');
+    require('salary', 'Salary expectation');
+    require('work_model', 'Work model');
+    require('english_level', 'English level');
+    require('english_interview', 'English interview comfort');
+
+    if (email && !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
+      errors.push(['email', 'Please enter a valid email.']);
+    }
+    if (linkedin && !/^https:\/\/([a-z0-9-]+\.)?linkedin\.com\//i.test(linkedin)) {
+      errors.push(['linkedin', 'Please enter a full https://linkedin.com/in/… URL.']);
+    }
+    if (years && (isNaN(years) || +years < 0 || +years > 50)) {
+      errors.push(['years', 'Years must be between 0 and 50.']);
+    }
+    const portfolio = (form.get('portfolio') ?? '').toString().trim();
+    if (portfolio && !/^https:\/\//i.test(portfolio)) {
+      errors.push(['portfolio', 'Portfolio URL must start with https://']);
+    }
+    const github = (form.get('github') ?? '').toString().trim();
+    if (github && !/^https:\/\/(www\.)?github\.com\//i.test(github)) {
+      errors.push(['github', 'GitHub URL must start with https://github.com/']);
+    }
+
+    if (!form.get('consent_pool'))  errors.push(['consent_pool',  'Talent-pool consent is required.']);
+    if (!form.get('consent_intro')) errors.push(['consent_intro', 'Introduction-permission consent is required.']);
+
+    return errors;
+  }
+
+  function showError(msg) {
+    successBox.classList.remove('show');
+    errorBox.textContent = msg;
+    errorBox.classList.add('show');
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function clearError() {
+    errorBox.classList.remove('show'); errorBox.textContent = '';
+  }
+  function showSuccess(msg) {
+    clearError();
+    successBox.textContent = msg;
+    successBox.classList.add('show');
+    successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ---------- Submission ----------
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError();
+    successBox.classList.remove('show');
+
+    const fd = new FormData(form);
+
+    // Client-side validation (server re-validates everything)
+    const errors = validateClient(fd);
+    if (errors.length) {
+      errors.forEach(([name, msg]) => markFieldError(name, msg));
+      showError("Please fix the highlighted fields and try again.");
+      return;
+    }
+
+    // Turnstile token
+    const tsToken = (window.turnstile && turnstileWidgetId !== null)
+      ? window.turnstile.getResponse(turnstileWidgetId)
+      : (fd.get('cf-turnstile-response') ?? '');
+    if (!tsToken) {
+      showError("Please complete the captcha challenge before submitting.");
+      return;
+    }
+    fd.set('cf-turnstile-response', tsToken);
+
+    // Disable submit, show spinner
+    submitBtn.disabled = true; resetBtn.disabled = true;
+    submittingMsg.classList.add('show');
+
+    try {
+      const resp = await fetch(cfg.EDGE_FUNCTION_URL, {
+        method: 'POST',
+        body: fd,
+        // No credentials: this is anonymous; cookies should never be sent.
+        credentials: 'omit',
+      });
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok && data.ok) {
+        showSuccess("✓ Submission received. The DevOps.global team will review your profile and be in touch soon. You can close this page.");
+        form.reset();
+        fileInfo.classList.remove('show');
+        if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+      } else {
+        const msg = data.error
+          ? readableError(data.error)
+          : 'Something went wrong on our side. Please try again in a moment.';
+        showError(msg);
+        if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+      }
+    } catch (err) {
+      console.error(err);
+      showError("Could not reach the server. Check your internet connection and try again.");
+      if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+    } finally {
+      submitBtn.disabled = false; resetBtn.disabled = false;
+      submittingMsg.classList.remove('show');
+    }
+  });
+
+  function readableError(code) {
+    const m = {
+      'captcha-verification-failed': 'The captcha could not be verified. Please try again.',
+      'rate-limited':                'Too many submissions from this network. Please wait a minute and try again.',
+      'payload-too-large':           'Your submission is too large. Please reduce CV size.',
+      'cv-too-large':                'Your CV file exceeds 10 MB.',
+      'cv-mime-not-allowed':         'Only PDF or DOCX CV files are accepted.',
+      'cv-extension-not-allowed':    'Only .pdf or .docx CV files are accepted.',
+      'cv-file-contents-do-not-match-claimed-type': 'The uploaded file does not look like a valid PDF or DOCX.',
+      'cv-upload-failed':            'CV upload failed. Please try a different file or omit the upload.',
+      'invalid-email':               'Please enter a valid email address.',
+      'invalid-linkedin':            'Please enter a valid LinkedIn profile URL.',
+      'invalid-portfolio-url':       'Portfolio URL must use https://',
+      'invalid-github-url':          'GitHub URL must start with https://github.com/',
+      'submission-failed':           'Submission could not be saved. Please try again.',
+      'request-timeout':             'The request timed out. Please try again.',
+    };
+    return m[code] ?? code;
+  }
+})();
+</script>
+</body>
+</html>
