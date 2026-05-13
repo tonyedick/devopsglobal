@@ -477,7 +477,6 @@
 
     <!-- Cloudflare Turnstile widget -->
     <div class="turnstile-wrap">
-      <!-- <div class="cf-turnstile" id="turnstileWidget"></div> -->
       <div id="turnstileWidget"></div>
     </div>
 
@@ -501,9 +500,6 @@
 <script>
 (() => {
   const cfg = window.DEVOPS_GLOBAL_CONFIG;
-  if (!cfg.EDGE_FUNCTION_URL || cfg.EDGE_FUNCTION_URL.includes("YOUR-PROJECT-REF.supabase.co/functions/v1/intake-submit")) {
-    console.warn("DEVOPS_GLOBAL_CONFIG.EDGE_FUNCTION_URL is not configured.");
-  }
 
   const form          = document.getElementById('intakeForm');
   const submitBtn     = document.getElementById('submitBtn');
@@ -703,7 +699,6 @@
         if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
       }
     } catch (err) {
-      console.error(err);
       showError("Could not reach the server. Check your internet connection and try again.");
       if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
     } finally {
