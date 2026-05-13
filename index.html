@@ -268,7 +268,7 @@
       <div class="row">
         <div class="field">
           <label>Current role <span class="required">*</span></label>
-          <input type="text" name="current_role" required maxlength="120">
+          <input type="text" name="current_role_name" required maxlength="120">
         </div>
         <div class="field">
           <label>Desired role <span class="required">*</span></label>
@@ -597,7 +597,7 @@
     const linkedin    = require('linkedin', 'LinkedIn URL');
     require('location', 'Country / city');
     require('timezone', 'Time zone');
-    require('current_role', 'Current role');
+    require('current_role_name', 'Current role');
     require('desired_role', 'Desired role');
     const years       = require('years', 'Years of experience');
     require('languages', 'Languages');
