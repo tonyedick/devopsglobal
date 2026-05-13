@@ -20,6 +20,7 @@
   window.DEVOPS_GLOBAL_CONFIG = {
     EDGE_FUNCTION_URL:  "https://ndypurygmnkxxgiozldm.supabase.co/functions/v1/intake-submit",
     TURNSTILE_SITE_KEY: "0x4AAAAAADOFtkxBIpj1_BkK",
+    SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5keXB1cnlnbW5reHhnaW96bGRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NTU2MDQsImV4cCI6MjA2NjQzMTYwNH0.eLWlPsQgWaQjiALJF5dpf3wsJgav-FSY5QWnlzMnlvQ",
   };
 </script>
 
@@ -210,8 +211,17 @@
 
     <!-- Honeypot: real users never see or fill this -->
     <div class="honeypot" aria-hidden="true">
-      <label>Company website (leave blank)
-        <input type="text" name="company_url" tabindex="-1" autocomplete="off">
+      <label>
+        Do not fill — anti-spam check
+        <input type="text"
+              name="_dgi_hp"
+              value=""
+              tabindex="-1"
+              autocomplete="off"
+              aria-hidden="true"
+              aria-autocomplete="none"
+              data-lpignore="true"
+              data-form-type="other">
       </label>
     </div>
 
