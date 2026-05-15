@@ -280,6 +280,7 @@
       <span class="spinner"></span> Loading candidates…
     </div>
     <table id="mainTable" style="display:none">
+      <colgroup id="colgroup"></colgroup>
       <thead><tr id="thead"></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -298,7 +299,6 @@
   ─────────────────────────────────────────────────────────────────────── */
   const COLS = [
     ["#",                null,                   "rownum"   ],
-    ["Submitted",        "submitted_at",          "date"     ],
     ["Name",             "name",                  null       ],
     ["Email",            "email",                 null       ],
     ["Phone",            "phone",                 null       ],
@@ -306,6 +306,7 @@
     ["Location",         "location",              null       ],
     ["Timezone",         "timezone",              null       ],
     ["Current Role",     "current_role_name",     null       ],
+    ["Status",           "current_status",        null       ],
     ["Desired Role",     "desired_role",          null       ],
     ["Yrs Exp.",         "years_experience",      null       ],
     ["Languages",        "languages",             null       ],
@@ -315,7 +316,6 @@
     ["Work Model",       "work_model",            null       ],
     ["Engagement",       "engagement_type",       null       ],
     ["Availability",     "availability",          null       ],
-    ["Status",           "current_status",        null       ],
     ["Priority",         "priority",              "badge"    ],
     ["Stage",            "stage",                 null       ],
     ["Recruiter Notes",  "recruiter_comment",     null       ],
@@ -439,6 +439,15 @@
 
   // ── Build table header ─────────────────────────────────────────────────
   function buildHeader() {
+    // Set column widths via <colgroup>
+    const colgroup = document.getElementById('colgroup');
+    colgroup.innerHTML = '';
+    COLS.forEach(([,,,width]) => {
+      const col = document.createElement('col');
+      if (width) col.style.minWidth = width + 'px';
+      colgroup.appendChild(col);
+    });
+
     theadRow.innerHTML = '';
     COLS.forEach(([label, key]) => {
       const th = document.createElement('th');
@@ -495,7 +504,7 @@
 
           case 'truncate': {
             const full = val.toString();
-            td.textContent = full.length > 15 ? full.slice(0, 15) + '…' : full;
+            td.textContent = full.length > 20 ? full.slice(0, 20) + '…' : full;
             td.title = full; // hover to see full text
             break;
           }
