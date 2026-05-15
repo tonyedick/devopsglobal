@@ -301,9 +301,9 @@
   ─────────────────────────────────────────────────────────────────────── */
   const COLS = [
     ["#",                null,                   "rownum"   ],
-    ["Name",             "name",                  null       ],
-    ["Email",            "email",                 null       ],
-    ["Phone",            "phone",                 null       ],
+    ["Name",             "name",                  "wider"       ],
+    ["Email",            "email",                 "wider"       ],
+    ["Phone",            "phone",                 "wider"       ],
     ["LinkedIn",         "linkedin",              "link"     ],
     ["Location",         "location",              null       ],
     ["Timezone",         "timezone",              null       ],
@@ -320,7 +320,7 @@
     ["Availability",     "availability",          null       ],
     ["Priority",         "priority",              "badge"    ],
     ["Stage",            "stage",                 null       ],
-    ["Recruiter Notes",  "recruiter_comment",     null       ],
+    ["Recruiter Notes",  "recruiter_comment",     "wider"       ],
     ["CV",               "__cv__",                "cv"       ],
   ];
 
@@ -484,6 +484,12 @@
         const val = key === '__cv__' ? null : (row[key] ?? '');
 
         switch (renderer) {
+
+          case 'wider':
+            td.textContent = val || '—';
+            td.style.minWidth = '180px';
+            break;
+            
           case 'rownum':
             td.textContent = idx + 1;
             td.classList.add('nowrap');
