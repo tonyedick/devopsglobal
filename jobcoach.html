@@ -309,7 +309,7 @@
     ["Desired Role",     "desired_role",          null       ],
     ["Yrs Exp.",         "years_experience",      null       ],
     ["Languages",        "languages",             null       ],
-    ["Main Skills",      "main_skills",           null       ],
+    ["Main Skills",      "main_skills",           "truncate" ],
     ["English Level",    "english_level",         null       ],
     ["Salary Exp.",      "salary_expectation",    null       ],
     ["Work Model",       "work_model",            null       ],
@@ -493,6 +493,13 @@
             break;
           }
 
+          case 'truncate': {
+            const full = val.toString();
+            td.textContent = full.length > 15 ? full.slice(0, 15) + '…' : full;
+            td.title = full; // hover to see full text
+            break;
+          }
+
           case 'link':
             td.innerHTML = val
               ? `<a class="link-sm" href="${esc(val)}" target="_blank" rel="noopener" title="${esc(val)}">LinkedIn ↗</a>`
@@ -517,7 +524,7 @@
               a.textContent = '⬇ CV';
               td.appendChild(a);
             }  else if (cvPath) {
-              td.innerHTML = `<span class="no-cv">URL failed</span><br><span class="cv-path">${esc(cvPath)}</span>`;
+               td.innerHTML = '<span class="no-cv" title="CV exists but link generation failed — redeploy Edge Function">⚠ CV error</span>';
             } else {
               td.innerHTML = '<span class="no-cv">No CV</span>';
             }
