@@ -1,3 +1,5 @@
+
+<!-- newnew -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,18 +8,12 @@
 <meta name="robots" content="noindex,nofollow">
 <title>DevOps.global — Jobcoach Pipeline</title>
 
-<!-- Runtime config — values injected from Vercel env vars, never hardcoded -->
-<script src="/api/config"></script>
-
-<!-- SheetJS for Excel export (must load before Tabulator) -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-<!-- Tabulator -->
-<link href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
+<!-- Runtime config — values injected from Cloudflare env vars, never hardcoded -->
+<script src="./api/config.js"></script>
 
 <style>
   :root {
+    color-scheme: light;
     --navy:       #0F2A44;
     --navy-light: #1F4E78;
     --accent:     #2E75B6;
@@ -26,8 +22,11 @@
     --text:       #1A2332;
     --muted:      #5A6B82;
     --border:     #D8E0EA;
+    --good:       #2E7D32;
+    --good-bg:    #E8F5E9;
     --bad:        #C62828;
     --bad-bg:     #FFEBEE;
+    --warn-bg:    #FFF8E1;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -43,7 +42,7 @@
   .header {
     background: var(--navy);
     color: white;
-    padding: 20px 24px;
+    padding: 24px 24px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -52,14 +51,14 @@
   }
   .header-brand h1 { font-size: 20px; font-weight: 700; }
   .header-brand p  { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-  .header-right    { font-size: 12px; opacity: 0.7; }
+  .header-right { font-size: 12px; opacity: 0.7; }
 
   /* ── Gate ── */
   #gateWrap {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 72px);
+    min-height: calc(100vh - 80px);
     padding: 24px;
   }
   .gate {
@@ -81,23 +80,30 @@
     margin-bottom: 10px; background: var(--bg);
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .gate input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(46,117,182,0.15); }
-  .gate .gate-err  { color: var(--bad); font-size: 12px; margin-bottom: 10px; min-height: 18px; }
+  .gate input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(46,117,182,0.15);
+  }
+  .gate .gate-err {
+    color: var(--bad); font-size: 12px; margin-bottom: 10px;
+    min-height: 18px;
+  }
+  .gate .gate-err.show { display: block; }
 
   /* ── Buttons ── */
   button {
-    padding: 7px 14px; font-size: 12px; font-weight: 600;
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
     border: none; border-radius: 6px; cursor: pointer;
     font-family: inherit; transition: opacity 0.15s;
     white-space: nowrap;
   }
-  button:hover:not(:disabled) { opacity: 0.85; }
-  button:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn-primary { background: var(--navy);   color: white; width: 100%; padding: 12px; font-size: 14px; font-weight: 600; }
-  .btn-navy    { background: var(--navy);   color: white; }
-  .btn-accent  { background: var(--accent); color: white; }
-  .btn-muted   { background: #EFF4FA; color: var(--navy); border: 1px solid var(--border); }
-  .btn-green   { background: #2E7D32; color: white; }
+  button:hover:not(:disabled) { opacity: 0.88; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary   { background: var(--navy);   color: white; }
+  .btn-accent    { background: var(--accent);  color: white; }
+  .btn-muted     { background: #EFF4FA; color: var(--navy); border: 1px solid var(--border); }
+  .btn-green     { background: #2E7D32; color: white; }
+  .btn-full      { width: 100%; padding: 12px; font-size: 14px; }
 
   /* ── Dashboard ── */
   #dashboard { display: none; padding: 20px 20px 48px; }
@@ -119,14 +125,95 @@
     align-items: center; justify-content: space-between;
     margin-bottom: 14px;
   }
-  .toolbar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .search-box {
     padding: 8px 12px; font-size: 13px;
     border: 1px solid var(--border); border-radius: 6px;
-    font-family: inherit; min-width: 260px; background: var(--card);
+    font-family: inherit; min-width: 240px; background: var(--card);
   }
   .search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(46,117,182,0.12); }
   .export-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ── Table ── */
+  .table-card {
+    background: var(--card);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 12px rgba(15,42,68,0.06);
+    overflow-x: auto;
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    background: var(--navy); color: white;
+    padding: 10px 14px;
+    text-align: left; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    cursor: pointer; user-select: none;
+    white-space: nowrap; position: sticky; top: 0;
+  }
+  thead th:hover { background: var(--navy-light); }
+  thead th .si { margin-left: 3px; font-size: 9px; opacity: 0.45; }
+  thead th.asc  .si::after { content: '▲'; opacity: 1; }
+  thead th.desc .si::after { content: '▼'; opacity: 1; }
+
+  tbody tr:nth-child(even) { background: #F9FAFB; }
+  tbody tr:hover { background: #EFF6FC; }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    max-width: 220px;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 13px;
+  }
+  tbody td.nowrap { white-space: nowrap; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 12px; font-size: 11px; font-weight: 600;
+  }
+  .badge-A  { background: #E8F5E9; color: #2E7D32; }
+  .badge-B  { background: #E3F2FD; color: #1565C0; }
+  .badge-C  { background: #FFF8E1; color: #F57F17; }
+  .badge-def{ background: #F5F5F5; color: #616161; }
+
+  .cv-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; font-size: 11px; font-weight: 600;
+    background: var(--accent); color: white; border-radius: 5px;
+    text-decoration: none; cursor: pointer;
+  }
+  .cv-btn:hover { opacity: 0.85; }
+  .no-cv { color: var(--muted); font-size: 11px; }
+
+  .link-sm {
+    color: var(--accent); font-size: 11px;
+    text-decoration: none;
+    display: inline-block;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .link-sm:hover { text-decoration: underline; }
+
+  /* ── State overlays ── */
+  .state-box {
+    padding: 48px; text-align: center;
+    color: var(--muted); font-size: 14px;
+  }
+  .state-box .icon { font-size: 32px; margin-bottom: 10px; }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   .err-bar {
     background: var(--bad-bg); color: var(--bad);
@@ -137,196 +224,14 @@
   .err-bar.show { display: block; }
 
   .footer {
-    text-align: center; margin-top: 20px;
+    text-align: center; margin-top: 24px;
     color: var(--muted); font-size: 11px;
   }
 
-  /* ── Cell helpers ── */
-  .badge {
-    display: inline-block; padding: 2px 8px;
-    border-radius: 12px; font-size: 11px; font-weight: 600;
-    line-height: 1.6;
-  }
-  .badge-A   { background: #E8F5E9; color: #2E7D32; }
-  .badge-B   { background: #E3F2FD; color: #1565C0; }
-  .badge-C   { background: #FFF8E1; color: #F57F17; }
-  .badge-def { background: #F5F5F5; color: #616161; }
-
-  .cv-btn {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px; font-size: 11px; font-weight: 600;
-    background: var(--accent); color: white; border-radius: 5px;
-    text-decoration: none;
-  }
-  .cv-btn:hover { opacity: 0.85; }
-
-  .cell-muted { color: var(--muted); font-size: 12px; }
-  .link-sm {
-    color: var(--accent); font-size: 12px; text-decoration: none;
-  }
-  .link-sm:hover { text-decoration: underline; }
-
-  /* ── Tabulator theme overrides ── */
-  .tabulator {
-    border: none;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(15,42,68,0.08);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-    font-size: 13px;
-    background: var(--card);
-  }
-
-  /* Header */
-  .tabulator .tabulator-header {
-    background: var(--navy);
-    border-bottom: none;
-  }
-  .tabulator .tabulator-header .tabulator-col {
-    background: var(--navy);
-    border-right: 1px solid rgba(255,255,255,0.08);
-    color: white;
-  }
-  .tabulator .tabulator-header .tabulator-col:hover {
-    background: var(--navy-light);
-  }
-  .tabulator .tabulator-header .tabulator-col.tabulator-col-sorted {
-    background: var(--navy-light);
-  }
-  .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
-    padding: 10px 12px;
-  }
-  .tabulator .tabulator-header .tabulator-col .tabulator-col-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: white;
-    font-weight: 600;
-  }
-  .tabulator .tabulator-header .tabulator-col .tabulator-col-sorter {
-    color: rgba(255,255,255,0.45);
-  }
-  .tabulator .tabulator-header .tabulator-col .tabulator-col-sorter .tabulator-arrow {
-    border-top-color: rgba(255,255,255,0.45);
-    border-bottom-color: rgba(255,255,255,0.45);
-  }
-  .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover .tabulator-col-sorter {
-    color: white;
-  }
-  .tabulator .tabulator-header .tabulator-col-resize-handle {
-    background: rgba(255,255,255,0.15);
-  }
-
-  /* Rows */
-  .tabulator .tabulator-tableholder .tabulator-table {
-    background: var(--card);
-  }
-  .tabulator-row {
-    border-bottom: 1px solid var(--border);
-    background: var(--card);
-  }
-  .tabulator-row.tabulator-row-even {
-    background: #F9FAFB;
-  }
-  .tabulator-row:hover,
-  .tabulator-row.tabulator-row-even:hover {
-    background: #EFF6FC !important;
-    cursor: default;
-  }
-  .tabulator-row .tabulator-cell {
-    border-right: none;
-    padding: 9px 12px;
-    color: var(--text);
-    vertical-align: top;
-  }
-  .tabulator-row .tabulator-cell.tabulator-frozen {
-    background: inherit;
-  }
-
-  /* Frozen column separator */
-  .tabulator-row .tabulator-frozen-right,
-  .tabulator .tabulator-header .tabulator-frozen.tabulator-frozen-right {
-    border-left: 2px solid var(--border);
-  }
-  .tabulator-row .tabulator-frozen-left,
-  .tabulator .tabulator-header .tabulator-frozen.tabulator-frozen-left {
-    border-right: 2px solid var(--border);
-    box-shadow: 2px 0 4px rgba(0,0,0,0.06);
-  }
-  .tabulator .tabulator-header .tabulator-col.tabulator-frozen.tabulator-frozen-left {
-    border-right: 2px solid rgba(255,255,255,0.15);
-  }
-
-  /* Footer / pagination */
-  .tabulator .tabulator-footer {
-    background: #F6F8FB;
-    border-top: 1px solid var(--border);
-    padding: 10px 14px;
-    color: var(--muted);
-    font-size: 12px;
-  }
-  .tabulator .tabulator-footer .tabulator-page-counter {
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .tabulator .tabulator-footer .tabulator-paginator {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-  .tabulator .tabulator-footer .tabulator-page,
-  .tabulator .tabulator-footer .tabulator-pages .tabulator-page {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    color: var(--text);
-    font-size: 12px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.12s;
-  }
-  .tabulator .tabulator-footer .tabulator-page:hover:not(:disabled):not(.active) {
-    background: #EFF4FA;
-  }
-  .tabulator .tabulator-footer .tabulator-page.active {
-    background: var(--navy);
-    color: white;
-    border-color: var(--navy);
-  }
-  .tabulator .tabulator-footer .tabulator-page:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-  .tabulator .tabulator-footer .tabulator-page-size {
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 4px 8px;
-    font-size: 12px;
-    font-family: inherit;
-    color: var(--text);
-    background: white;
-    margin-left: 8px;
-  }
-
-  /* Empty state */
-  .tabulator .tabulator-placeholder {
-    padding: 48px;
-    color: var(--muted);
-    font-size: 14px;
-  }
-
-  /* Scrollbar */
-  .tabulator .tabulator-tableholder::-webkit-scrollbar { height: 6px; width: 6px; }
-  .tabulator .tabulator-tableholder::-webkit-scrollbar-track { background: #F6F8FB; }
-  .tabulator .tabulator-tableholder::-webkit-scrollbar-thumb { background: #C4CFDB; border-radius: 3px; }
-  .tabulator .tabulator-tableholder::-webkit-scrollbar-thumb:hover { background: #9AAAB8; }
-
   @media (max-width: 640px) {
-    #dashboard { padding: 12px 10px 40px; }
     .toolbar { flex-direction: column; align-items: stretch; }
     .search-box { min-width: unset; width: 100%; }
+    #dashboard { padding: 14px 12px 40px; }
   }
 </style>
 </head>
@@ -348,7 +253,7 @@
     <p>Enter the password provided by your recruiter to view candidates cleared for Jobcoach.</p>
     <div class="gate-err" id="gateErr"></div>
     <input type="password" id="pwInput" placeholder="Password" autocomplete="current-password">
-    <button class="btn-primary" id="unlockBtn">View Pipeline →</button>
+    <button class="btn-primary btn-full" id="unlockBtn">View Pipeline →</button>
   </div>
 </div>
 
@@ -359,19 +264,29 @@
 
   <div class="toolbar">
     <div class="toolbar-left">
-      <input class="search-box" type="search" id="searchBox" placeholder="🔍  Search name, email, role, skills…">
+      <input class="search-box" type="search" id="searchBox"
+        placeholder="🔍  Search name, role, skills, location…">
     </div>
     <div class="export-row">
-      <button class="btn-muted" id="csvBtn">⬇ CSV</button>
-      <button class="btn-muted" id="jsonBtn">⬇ JSON</button>
-      <button class="btn-green" id="xlsxBtn">⬇ Excel</button>
-      <button class="btn-muted" onclick="doRefresh()">↻ Refresh</button>
+      <button class="btn-muted" style="font-size:12px;padding:6px 12px" onclick="doExport('csv')">⬇ CSV</button>
+      <button class="btn-muted" style="font-size:12px;padding:6px 12px" onclick="doExport('json')">⬇ JSON</button>
+      <button class="btn-green" style="font-size:12px;padding:6px 12px" onclick="doExport('excel')">⬇ Excel</button>
+      <button class="btn-muted" style="font-size:12px;padding:6px 12px" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
     </div>
   </div>
 
   <div class="err-bar" id="errBar"></div>
 
-  <div id="candidates-table"></div>
+  <div class="table-card">
+    <div id="stateBox" class="state-box">
+      <span class="spinner"></span> Loading candidates…
+    </div>
+    <table id="mainTable" style="display:none">
+      <colgroup id="colgroup"></colgroup>
+      <thead><tr id="thead"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
 
   <p class="footer">DevOps.global · Jobcoach Pipeline · Confidential · CV links expire after 1 hour — refresh to regenerate</p>
 </div>
@@ -379,10 +294,43 @@
 <script>
 (() => {
   const cfg = window.DEVOPS_GLOBAL_CONFIG;
-  let table  = null;
-  let allRows = [];
 
-  // ── DOM refs ──────────────────────────────────────────────────────────
+  /* ── Column definitions ────────────────────────────────────────────────
+     [Header, db_key, render_fn_name?]
+     render_fn_name: 'date' | 'badge' | 'link' | 'linkedin' | 'bool' | null (plain text)
+  ─────────────────────────────────────────────────────────────────────── */
+  const COLS = [
+    ["#",                null,                   "rownum"   ],
+    ["Name",             "name",                  null       ],
+    ["Email",            "email",                 null       ],
+    ["Phone",            "phone",                 null       ],
+    ["LinkedIn",         "linkedin",              "link"     ],
+    ["Location",         "location",              null       ],
+    ["Timezone",         "timezone",              null       ],
+    ["Current Role",     "current_role_name",     null       ],
+    ["Status",           "current_status",        null       ],
+    ["Desired Role",     "desired_role",          null       ],
+    ["Yrs Exp.",         "years_experience",      null       ],
+    ["Languages",        "languages",             null       ],
+    ["Main Skills",      "main_skills",           "truncate" ],
+    ["English Level",    "english_level",         null       ],
+    ["Salary Exp.",      "salary_expectation",    null       ],
+    ["Work Model",       "work_model",            null       ],
+    ["Engagement",       "engagement_type",       null       ],
+    ["Availability",     "availability",          null       ],
+    ["Priority",         "priority",              "badge"    ],
+    ["Stage",            "stage",                 null       ],
+    ["Recruiter Notes",  "recruiter_comment",     null       ],
+    ["CV",               "__cv__",                "cv"       ],
+  ];
+
+  // ── State ──
+  let allRows  = [];
+  let filtered = [];
+  let sortKey  = null;
+  let sortDir  = 'asc';
+
+  // ── DOM ──
   const gateWrap   = document.getElementById('gateWrap');
   const dashboard  = document.getElementById('dashboard');
   const pwInput    = document.getElementById('pwInput');
@@ -391,242 +339,13 @@
   const searchBox  = document.getElementById('searchBox');
   const statsBar   = document.getElementById('statsBar');
   const errBar     = document.getElementById('errBar');
+  const stateBox   = document.getElementById('stateBox');
+  const mainTable  = document.getElementById('mainTable');
+  const theadRow   = document.getElementById('thead');
+  const tbodyEl    = document.getElementById('tbody');
   const sessionInfo= document.getElementById('sessionInfo');
 
-  // ── Column definitions ────────────────────────────────────────────────
-  const columns = [
-    {
-      title: "#",
-      formatter: "rownum",
-      hozAlign: "center",
-      width: 50,
-      minWidth: 50,
-      resizable: false,
-      headerSort: false,
-      frozen: true,
-      download: false,
-    },
-    {
-      title: "Name",
-      field: "name",
-      width: 170,
-      minWidth: 130,
-      frozen: true,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Submitted",
-      field: "submitted_at",
-      width: 105,
-      minWidth: 90,
-      sorter: "date",
-      sorterParams: { format: "iso", alignEmptyValues: "bottom" },
-      formatter: function(cell) {
-        const v = cell.getValue();
-        if (!v) return dash();
-        return new Date(v).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-      },
-      formatterParams: { invalidPlaceholder: "—" },
-      download: function(cell) {
-        const v = cell.getValue();
-        return v ? new Date(v).toLocaleDateString('en-GB') : '';
-      },
-    },
-    {
-      title: "Email",
-      field: "email",
-      width: 210,
-      minWidth: 160,
-      formatter: function(cell) {
-        const v = cell.getValue();
-        if (!v) return dash();
-        return `<a class="link-sm" href="mailto:${esc(v)}">${esc(v)}</a>`;
-      },
-    },
-    {
-      title: "Phone",
-      field: "phone",
-      width: 135,
-      minWidth: 110,
-      formatter: plainOrDash,
-    },
-    {
-      title: "LinkedIn",
-      field: "linkedin",
-      width: 110,
-      minWidth: 80,
-      headerSort: false,
-      formatter: function(cell) {
-        const v = cell.getValue();
-        if (!v) return dash();
-        return `<a class="link-sm" href="${esc(v)}" target="_blank" rel="noopener">LinkedIn ↗</a>`;
-      },
-      download: function(cell) { return cell.getValue() || ''; },
-    },
-    {
-      title: "Location",
-      field: "location",
-      width: 130,
-      minWidth: 100,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Timezone",
-      field: "timezone",
-      width: 95,
-      minWidth: 80,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Current Role",
-      field: "current_role_name",
-      width: 155,
-      minWidth: 120,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Desired Role",
-      field: "desired_role",
-      width: 155,
-      minWidth: 120,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Yrs Exp.",
-      field: "years_experience",
-      width: 75,
-      minWidth: 65,
-      hozAlign: "center",
-      sorter: "number",
-      formatter: plainOrDash,
-    },
-    {
-      title: "Languages",
-      field: "languages",
-      width: 110,
-      minWidth: 90,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Main Skills",
-      field: "main_skills",
-      width: 125,
-      minWidth: 100,
-      tooltip: true,
-      formatter: function(cell) {
-        const v = cell.getValue() || '';
-        const short = v.length > 15 ? v.slice(0, 15) + '…' : v;
-        return v ? `<span title="${esc(v)}">${esc(short)}</span>` : dash();
-      },
-      download: function(cell) { return cell.getValue() || ''; },
-    },
-    {
-      title: "English Level",
-      field: "english_level",
-      width: 100,
-      minWidth: 80,
-      formatter: plainOrDash,
-    },
-    {
-      title: "English Interview",
-      field: "english_interview",
-      width: 105,
-      minWidth: 85,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Salary Exp.",
-      field: "salary_expectation",
-      width: 115,
-      minWidth: 95,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Work Model",
-      field: "work_model",
-      width: 100,
-      minWidth: 85,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Engagement",
-      field: "engagement_type",
-      width: 100,
-      minWidth: 85,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Availability",
-      field: "availability",
-      width: 100,
-      minWidth: 85,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Status",
-      field: "current_status",
-      width: 110,
-      minWidth: 90,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Priority",
-      field: "priority",
-      width: 80,
-      minWidth: 70,
-      hozAlign: "center",
-      formatter: function(cell) {
-        const v = cell.getValue();
-        if (!v) return dash();
-        const vu = v.toString().toUpperCase();
-        const cls = vu === 'A' ? 'badge-A' : vu === 'B' ? 'badge-B' : vu === 'C' ? 'badge-C' : 'badge-def';
-        return `<span class="badge ${cls}">${esc(v)}</span>`;
-      },
-      download: function(cell) { return cell.getValue() || ''; },
-    },
-    {
-      title: "Stage",
-      field: "stage",
-      width: 145,
-      minWidth: 110,
-      formatter: plainOrDash,
-    },
-    {
-      title: "Recruiter Notes",
-      field: "recruiter_comment",
-      width: 260,
-      minWidth: 180,
-      tooltip: true,
-      formatter: function(cell) {
-        const v = cell.getValue() || '';
-        return v ? `<span title="${esc(v)}">${esc(v)}</span>` : dash();
-      },
-      download: function(cell) { return cell.getValue() || ''; },
-    },
-    {
-      title: "CV",
-      field: "cv_url",
-      width: 80,
-      minWidth: 70,
-      hozAlign: "center",
-      headerSort: false,
-      resizable: false,
-      download: false,
-      formatter: function(cell) {
-        const cvUrl  = cell.getValue();
-        const row    = cell.getRow().getData();
-        const cvName = row.cv_original_name || 'Download CV';
-        if (cvUrl) {
-          return `<a class="cv-btn" href="${esc(cvUrl)}" target="_blank" rel="noopener" download="${esc(cvName)}">⬇ CV</a>`;
-        } else if (row.cv_storage_path) {
-          return `<span class="cell-muted" title="CV exists but link generation failed — redeploy Edge Function">⚠ error</span>`;
-        }
-        return `<span class="cell-muted">No CV</span>`;
-      },
-    },
-  ];
-
-  // ── Password gate ─────────────────────────────────────────────────────
+  // ── Password / unlock ──────────────────────────────────────────────────
   unlockBtn.addEventListener('click', tryUnlock);
   pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
   pwInput.addEventListener('input',   () => { gateErr.textContent = ''; });
@@ -639,6 +358,7 @@
     gateErr.textContent = '';
 
     try {
+      // Send password to edge function; if wrong it returns 401.
       const resp = await fetch(cfg.SUPABASE_FUNCTIONS_BASE + '/jobcoach-view', {
         method: 'POST',
         headers: {
@@ -660,17 +380,19 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error ?? `Error ${resp.status}`);
 
-      allRows = data.candidates ?? [];
-
+      // Success — store data and show dashboard
       gateWrap.style.display = 'none';
       dashboard.classList.add('show');
 
+         // ── FIX 1: Time with local timezone ──
       sessionInfo.textContent = `Loaded ${new Date().toLocaleTimeString([], {
         hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
       })}`;
 
+      allRows  = data.candidates ?? [];
+      filtered = allRows;
       buildStats();
-      initTable();
+      buildTable();
 
     } catch (err) {
       gateErr.textContent = `Error: ${err.message}`;
@@ -680,27 +402,31 @@
     }
   }
 
-  // ── Refresh ───────────────────────────────────────────────────────────
-  window.doRefresh = function() {
-    if (table) { table.destroy(); table = null; }
+  // ── Refresh ──────────────────────────────────────────────────────────
+  window.loadData = async function () {
+    stateBox.style.display  = 'block';
+    stateBox.innerHTML = '<span class="spinner"></span> Refreshing…';
+    mainTable.style.display = 'none';
+    errBar.classList.remove('show');
+
     gateWrap.style.display = '';
     dashboard.classList.remove('show');
     pwInput.value = '';
     pwInput.focus();
   };
 
-  // ── Stats bar ─────────────────────────────────────────────────────────
+  // ── Stats bar ──────────────────────────────────────────────────────────
   function buildStats() {
-    const total  = allRows.length;
+    const total = allRows.length;
     const withCV = allRows.filter(r => r.cv_url).length;
 
-    const roles = {};
+    const roles  = {};
     allRows.forEach(r => {
       const role = r.desired_role || 'Unknown';
       roles[role] = (roles[role] || 0) + 1;
     });
 
-    const roleChips = Object.entries(roles)
+      const roleChips = Object.entries(roles)
       .sort((a, b) => b[1] - a[1])
       .map(([role, count]) =>
         `<div class="stat-chip"><strong>${count}</strong>${esc(role)}</div>`
@@ -713,63 +439,218 @@
     `;
   }
 
-  // ── Tabulator init ────────────────────────────────────────────────────
-  function initTable() {
-    if (table) table.destroy();
-
-    table = new Tabulator("#candidates-table", {
-      data:              allRows,
-      columns:           columns,
-      layout:            "fitData",
-      responsiveLayout:  false,
-      movableColumns:    true,
-      resizableColumns:  "header",
-      pagination:        true,
-      paginationMode:    "local",
-      paginationSize:    25,
-      paginationSizeSelector: [10, 25, 50, 100],
-      initialSort:       [{ column: "submitted_at", dir: "desc" }],
-      placeholder:       "<span style='color:#5A6B82;font-size:14px'>No candidates match your search.</span>",
-      rowFormatter:      function() {},   // keep even/odd via CSS
-      downloadConfig:    { columnHeaders: true },
-      downloadRowRange:  "all",
+  // ── Build table header ─────────────────────────────────────────────────
+  function buildHeader() {
+    // Set column widths via <colgroup>
+    const colgroup = document.getElementById('colgroup');
+    colgroup.innerHTML = '';
+    COLS.forEach(([,,,width]) => {
+      const col = document.createElement('col');
+      if (width) col.style.minWidth = width + 'px';
+      colgroup.appendChild(col);
     });
 
-    // Wire up export buttons
-    document.getElementById('csvBtn').onclick  = () => table.download("csv",  `jobcoach_${today()}.csv`);
-    document.getElementById('jsonBtn').onclick = () => table.download("json", `jobcoach_${today()}.json`);
-    document.getElementById('xlsxBtn').onclick = () =>
-      table.download("xlsx", `jobcoach_${today()}.xlsx`, { sheetName: "Candidates" });
-
-    // Wire up search
-    searchBox.addEventListener('input', onSearch);
+    theadRow.innerHTML = '';
+    COLS.forEach(([label, key]) => {
+      const th = document.createElement('th');
+      th.innerHTML = `${esc(label)} <span class="si"></span>`;
+      if (key && key !== '__cv__') {
+        if (key === sortKey) th.classList.add(sortDir);
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => onSort(key));
+      }
+      theadRow.appendChild(th);
+    });
   }
 
-  // ── Global search across all text fields ──────────────────────────────
-  function onSearch() {
-    const q = searchBox.value.trim().toLowerCase();
-    if (!q) {
-      table.clearFilter();
+  // ── Render rows ────────────────────────────────────────────────────────
+  function renderRows(rows) {
+    tbodyEl.innerHTML = '';
+
+    if (!rows.length) {
+      stateBox.style.display  = 'block';
+      stateBox.innerHTML = '<div class="icon">📭</div>No candidates match your search.';
+      mainTable.style.display = 'none';
       return;
     }
-    table.setFilter(function(data) {
-      return Object.values(data).some(v =>
-        v != null && v.toString().toLowerCase().includes(q)
-      );
+
+    stateBox.style.display  = 'none';
+    mainTable.style.display = 'table';
+
+    rows.forEach((row, idx) => {
+      const tr = document.createElement('tr');
+      COLS.forEach(([, key, renderer]) => {
+        const td = document.createElement('td');
+        const val = key === '__cv__' ? null : (row[key] ?? '');
+
+        switch (renderer) {
+          case 'rownum':
+            td.textContent = idx + 1;
+            td.classList.add('nowrap');
+            td.style.color = 'var(--muted)';
+            break;
+
+          case 'date':
+            td.textContent = val
+              ? new Date(val).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+              : '—';
+            td.classList.add('nowrap');
+            break;
+
+          case 'badge': {
+            const v = val.toString().toUpperCase();
+            const cls = v === 'A' ? 'badge-A' : v === 'B' ? 'badge-B' : v === 'C' ? 'badge-C' : 'badge-def';
+            td.innerHTML = val ? `<span class="badge ${cls}">${esc(val)}</span>` : '<span style="color:var(--muted)">—</span>';
+            break;
+          }
+
+          case 'truncate': {
+            const full = val.toString();
+            td.textContent = full.length > 20 ? full.slice(0, 20) + '…' : full;
+            td.title = full; // hover to see full text
+            break;
+          }
+
+          case 'link':
+            td.innerHTML = val
+              ? `<a class="link-sm" href="${esc(val)}" target="_blank" rel="noopener" title="${esc(val)}">LinkedIn ↗</a>`
+              : '<span class="no-cv">—</span>';
+            break;
+
+          case 'bool':
+            td.textContent = val === true ? 'Yes' : val === false ? 'No' : '—';
+            break;
+
+          case 'cv': {
+            const cvUrl  = row['cv_url'];
+            const cvPath = row['cv_storage_path'];
+            const cvName = row['cv_original_name'] ?? 'Download CV';
+            if (cvUrl) {
+              const a = document.createElement('a');
+              a.className = 'cv-btn';
+              a.href      = cvUrl;
+              a.target    = '_blank';
+              a.rel       = 'noopener';
+              a.download  = cvName;
+              a.textContent = '⬇ CV';
+              td.appendChild(a);
+            }  else if (cvPath) {
+               td.innerHTML = '<span class="no-cv" title="CV exists but link generation failed — redeploy Edge Function">⚠ CV error</span>';
+            } else {
+              td.innerHTML = '<span class="no-cv">No CV</span>';
+            }
+            td.classList.add('nowrap');
+            break;
+          }
+          default:
+            td.textContent = val !== null && val !== '' ? val : '—';
+        }
+        tr.appendChild(td);
+      });
+      tbodyEl.appendChild(tr);
     });
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────
-  function dash() { return '<span class="cell-muted">—</span>'; }
-  function plainOrDash(cell) {
-    const v = cell.getValue();
-    return (v !== null && v !== undefined && v !== '') ? esc(String(v)) : dash();
+  function buildTable() {
+    buildHeader();
+    renderRows(filtered);
   }
+
+  // ── Sort ───────────────────────────────────────────────────────────────
+  function onSort(key) {
+    if (sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortKey = key; sortDir = 'asc'; }
+    filtered = [...filtered].sort((a, b) => {
+      const av = (a[key] ?? '').toString().toLowerCase();
+      const bv = (b[key] ?? '').toString().toLowerCase();
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    buildTable();
+  }
+
+  // ── Search ─────────────────────────────────────────────────────────────
+  searchBox.addEventListener('input', () => {
+    const q = searchBox.value.toLowerCase().trim();
+    filtered = q
+      ? allRows.filter(r =>
+          COLS.some(([, key]) => key && key !== '__cv__'
+            ? (r[key] ?? '').toString().toLowerCase().includes(q)
+            : false)
+        )
+      : allRows;
+    buildTable();
+  });
+
+  // ── Exports ────────────────────────────────────────────────────────────
+  window.doExport = function(fmt) {
+    const exportCols = COLS.filter(([, key, r]) => key && key !== '__cv__' && r !== 'rownum');
+
+    if (fmt === 'csv') {
+      const header = exportCols.map(([l]) => `"${l}"`).join(',');
+      const rows   = filtered.map(r =>
+        exportCols.map(([, k, renderer]) => {
+          let v = r[k] ?? '';
+          if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
+          if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
+          return `"${v.toString().replace(/"/g,'""')}"`;
+        }).join(',')
+      ).join('\n');
+      // Also append cv_url column
+      const csvHeader = header + ',"CV URL"';
+      const csvRows   = rows.split('\n').map((row, i) => {
+        const cv = filtered[i]?.cv_url ?? '';
+        return row + `,"${cv}"`;
+      }).join('\n');
+      download(`jobcoach_candidates_${today()}.csv`, 'text/csv', csvHeader + '\n' + csvRows);
+    }
+
+    else if (fmt === 'json') {
+      const out = filtered.map(r => {
+        const o = {};
+        exportCols.forEach(([l, k, renderer]) => {
+          let v = r[k] ?? null;
+          o[l] = v;
+        });
+        o['CV URL'] = r.cv_url ?? null;
+        return o;
+      });
+      download(`jobcoach_candidates_${today()}.json`, 'application/json', JSON.stringify(out, null, 2));
+    }
+
+    else if (fmt === 'excel') {
+      let html = '<html><head><meta charset="UTF-8"></head><body><table>';
+      html += '<tr>' + exportCols.map(([l]) => `<th>${esc(l)}</th>`).join('') + '<th>CV URL</th></tr>';
+      filtered.forEach(r => {
+        html += '<tr>';
+        exportCols.forEach(([, k, renderer]) => {
+          let v = r[k] ?? '';
+          if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
+          if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
+          html += `<td>${esc(v.toString())}</td>`;
+        });
+        html += `<td>${esc(r.cv_url ?? '')}</td>`;
+        html += '</tr>';
+      });
+      html += '</table></body></html>';
+      download(`jobcoach_candidates_${today()}.xls`, 'application/vnd.ms-excel', html);
+    }
+  };
+
+  function download(name, mime, content) {
+    const blob = new Blob([content], { type: mime });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 800);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────
   function today() { return new Date().toISOString().split('T')[0]; }
-  function esc(s) {
+  function esc(s)  {
     return String(s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
 })();
