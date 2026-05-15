@@ -311,8 +311,6 @@
     ["Languages",        "languages",             null       ],
     ["Main Skills",      "main_skills",           null       ],
     ["English Level",    "english_level",         null       ],
-    ["English Interview","english_interview",     null       ],
-    ["Int'l Exp.",       "international_exp",     null       ],
     ["Salary Exp.",      "salary_expectation",    null       ],
     ["Work Model",       "work_model",            null       ],
     ["Engagement",       "engagement_type",       null       ],
@@ -320,9 +318,6 @@
     ["Status",           "current_status",        null       ],
     ["Priority",         "priority",              "badge"    ],
     ["Stage",            "stage",                 null       ],
-    // ["Recommendation",   "recommendation",        null       ],
-    // ["Next Step",        "next_step",             null       ],
-    // ["Next Step Date",   "next_step_date",        "date"     ],
     ["Recruiter Notes",  "recruiter_comment",     null       ],
     ["CV",               "__cv__",                "cv"       ],
   ];
@@ -332,7 +327,6 @@
   let filtered = [];
   let sortKey  = null;
   let sortDir  = 'asc';
-  let rowCount = 0;
 
   // ── DOM ──
   const gateWrap   = document.getElementById('gateWrap');
@@ -387,7 +381,11 @@
       // Success — store data and show dashboard
       gateWrap.style.display = 'none';
       dashboard.classList.add('show');
-      sessionInfo.textContent = `Loaded ${new Date().toLocaleTimeString()}`;
+
+         // ── FIX 1: Time with local timezone ──
+      sessionInfo.textContent = `Loaded ${new Date().toLocaleTimeString([], {
+        hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+      })}`;
 
       allRows  = data.candidates ?? [];
       filtered = allRows;
@@ -409,8 +407,6 @@
     mainTable.style.display = 'none';
     errBar.classList.remove('show');
 
-    // We need to re-auth — but we don't have the password in memory.
-    // Instead, show the gate again so the user re-enters it.
     gateWrap.style.display = '';
     dashboard.classList.remove('show');
     pwInput.value = '';
@@ -421,17 +417,23 @@
   function buildStats() {
     const total = allRows.length;
     const withCV = allRows.filter(r => r.cv_url).length;
+
     const roles  = {};
     allRows.forEach(r => {
       const role = r.desired_role || 'Unknown';
       roles[role] = (roles[role] || 0) + 1;
     });
-    const topRole = Object.entries(roles).sort((a,b)=>b[1]-a[1])[0];
+
+      const roleChips = Object.entries(roles)
+      .sort((a, b) => b[1] - a[1])
+      .map(([role, count]) =>
+        `<div class="stat-chip"><strong>${count}</strong>${esc(role)}</div>`
+      ).join('');
 
     statsBar.innerHTML = `
       <div class="stat-chip"><strong>${total}</strong>Jobcoach Candidates</div>
       <div class="stat-chip"><strong>${withCV}</strong>With CV</div>
-      ${topRole ? `<div class="stat-chip"><strong>${topRole[1]}</strong>${esc(topRole[0])}</div>` : ''}
+      ${roleChips}
     `;
   }
 
@@ -477,18 +479,6 @@
             td.style.color = 'var(--muted)';
             break;
 
-          case 'cand_id': {
-            // Strip folder prefix e.g. "2026-05/filename.pdf" → "filename.pdf"
-            const path = row['cv_storage_path'] ?? '';
-            const filename = path.replace(/^[^/]+\//, '');
-            td.textContent = filename || '—';
-            td.classList.add('nowrap');
-            td.style.fontFamily = 'monospace';
-            td.style.fontSize   = '11px';
-            td.style.color      = 'var(--muted)';
-            break;
-          }
-
           case 'date':
             td.textContent = val
               ? new Date(val).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
@@ -515,6 +505,7 @@
 
           case 'cv': {
             const cvUrl  = row['cv_url'];
+            const cvPath = row['cv_storage_path'];
             const cvName = row['cv_original_name'] ?? 'Download CV';
             if (cvUrl) {
               const a = document.createElement('a');
@@ -525,17 +516,17 @@
               a.download  = cvName;
               a.textContent = '⬇ CV';
               td.appendChild(a);
+            }  else if (cvPath) {
+              td.innerHTML = `<span class="no-cv">URL failed</span><br><span class="cv-path">${esc(cvPath)}</span>`;
             } else {
               td.innerHTML = '<span class="no-cv">No CV</span>';
             }
             td.classList.add('nowrap');
             break;
           }
-
           default:
             td.textContent = val !== null && val !== '' ? val : '—';
         }
-
         tr.appendChild(td);
       });
       tbodyEl.appendChild(tr);
@@ -581,7 +572,6 @@
       const rows   = filtered.map(r =>
         exportCols.map(([, k, renderer]) => {
           let v = r[k] ?? '';
-          if (renderer === 'cand_id') v = (r['cv_storage_path'] ?? '').replace(/^[^/]+\//, '');
           if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
           if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
           return `"${v.toString().replace(/"/g,'""')}"`;
@@ -601,7 +591,6 @@
         const o = {};
         exportCols.forEach(([l, k, renderer]) => {
           let v = r[k] ?? null;
-          if (renderer === 'cand_id') v = (r['cv_storage_path'] ?? '').replace(/^[^/]+\//, '');
           o[l] = v;
         });
         o['CV URL'] = r.cv_url ?? null;
@@ -617,7 +606,6 @@
         html += '<tr>';
         exportCols.forEach(([, k, renderer]) => {
           let v = r[k] ?? '';
-          if (renderer === 'cand_id') v = (r['cv_storage_path'] ?? '').replace(/^[^/]+\//, '');
           if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
           if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
           html += `<td>${esc(v.toString())}</td>`;
