@@ -6,24 +6,8 @@
 <meta name="robots" content="noindex,nofollow">
 <title>DevOps.global — Jobcoach Pipeline</title>
 
-<!--
-  =========================================================================
-  CONFIG — set these two values before deploying.
-  =========================================================================
-  EDGE_FUNCTION_URL  : URL of your deployed "jobcoach-view" Edge Function.
-  SUPABASE_ANON_KEY  : Your Supabase anon/public key — needed as an
-                       invocation header so Supabase lets the request
-                       reach the function. This is already public (it's
-                       in your intake form too). The actual data is still
-                       protected by the password inside the function.
-  =========================================================================
--->
-<script>
-  window.JC_CONFIG = {
-    EDGE_FUNCTION_URL: "https://ndypurygmnkxxgiozldm.supabase.co/functions/v1/jobcoach-view",
-    SUPABASE_ANON_KEY: "your-supabase-anon-key"
-  };
-</script>
+<!-- Runtime config — values injected from Cloudflare env vars, never hardcoded -->
+<script src="./api/config.js"></script>
 
 <style>
   :root {
@@ -306,7 +290,7 @@
 
 <script>
 (() => {
-  const cfg = window.JC_CONFIG;
+  const cfg = window.DEVOPS_GLOBAL_CONFIG;
 
   /* ── Column definitions ────────────────────────────────────────────────
      [Header, db_key, render_fn_name?]
@@ -384,13 +368,13 @@
 
     try {
       // Send password to edge function; if wrong it returns 401.
-      const resp = await fetch(cfg.EDGE_FUNCTION_URL, {
+      const resp = await fetch(cfg.SUPABASE_FUNCTIONS_BASE + '/jobcoach-view', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
+        headers: {
+          'Content-Type':  'application/json',
           'apikey':        cfg.SUPABASE_ANON_KEY,
           'Authorization': `Bearer ${cfg.SUPABASE_ANON_KEY}`,
-         },
+        },
         body: JSON.stringify({ password: pw }),
         credentials: 'omit',
       });

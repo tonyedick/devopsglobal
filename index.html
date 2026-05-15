@@ -6,25 +6,10 @@
 <meta name="robots" content="noindex,nofollow">
 <title>DevOps.global — Candidate Intake</title>
 
-<!--
-  =======================================================================
-  CONFIG — set these two values, then deploy.
-  =======================================================================
-  EDGE_FUNCTION_URL : the public URL of your Supabase Edge Function
-                      e.g. https://YOUR-REF.supabase.co/functions/v1/intake-submit
-  TURNSTILE_SITE_KEY: the public site key from Cloudflare Turnstile
-                      (NOT the secret key — that lives in Supabase env vars)
-  =======================================================================
--->
-<script>
-  window.DEVOPS_GLOBAL_CONFIG = {
-    EDGE_FUNCTION_URL:  "https://ndypurygmnkxxgiozldm.supabase.co/functions/v1/intake-submit",
-    TURNSTILE_SITE_KEY: "0x4AAAAAADOFtkxBIpj1_BkK",
-    SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5keXB1cnlnbW5reHhnaW96bGRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NTU2MDQsImV4cCI6MjA2NjQzMTYwNH0.eLWlPsQgWaQjiALJF5dpf3wsJgav-FSY5QWnlzMnlvQ",
-  };
-</script>
+<!-- Runtime config — values injected from Cloudflare env vars, never hardcoded -->
+<script src="./api/config.js"></script>
 
-<!-- Cloudflare Turnstile loader. Subresource integrity not yet supported by Cloudflare for this script. -->
+<!-- Cloudflare Turnstile loader -->
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
 <style>
@@ -678,10 +663,9 @@
     submittingMsg.classList.add('show');
 
     try {
-      const resp = await fetch(cfg.EDGE_FUNCTION_URL, {
+      const resp = await fetch(cfg.SUPABASE_FUNCTIONS_BASE + '/intake-submit', {
         method: 'POST',
         body: fd,
-        // No credentials: this is anonymous; cookies should never be sent.
         credentials: 'omit',
       });
       const data = await resp.json().catch(() => ({}));
