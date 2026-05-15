@@ -308,19 +308,19 @@
     ["Location",         "location",              null       ],
     ["Timezone",         "timezone",              null       ],
     ["Current Role",     "current_role_name",     null       ],
-    ["Status",           "current_status",        null       ],
+    ["Status",           "current_status",        "wider"       ],
     ["Desired Role",     "desired_role",          null       ],
     ["Yrs Exp.",         "years_experience",      null       ],
     ["Languages",        "languages",             null       ],
     ["Main Skills",      "main_skills",           "truncate" ],
     ["English Level",    "english_level",         null       ],
     ["Salary Exp.",      "salary_expectation",    null       ],
-    ["Work Model",       "work_model",            null       ],
+    ["Work Model",       "work_model",            "wider"       ],
     ["Engagement",       "engagement_type",       null       ],
     ["Availability",     "availability",          null       ],
     ["Priority",         "priority",              "badge"    ],
-    ["Stage",            "stage",                 null       ],
-    ["Recruiter Notes",  "recruiter_comment",     "wider"       ],
+    ["Stage",            "stage",                 "wider"       ],
+    ["Recruiter Notes",  "recruiter_comment",     "wider"       ],                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
     ["CV",               "__cv__",                "cv"       ],
   ];
 
@@ -489,7 +489,7 @@
             td.textContent = val || '—';
             td.style.minWidth = '180px';
             break;
-            
+
           case 'rownum':
             td.textContent = idx + 1;
             td.classList.add('nowrap');
