@@ -8,15 +8,20 @@
 
 <!--
   =========================================================================
-  CONFIG — only one value to set here.
+  CONFIG — set these two values before deploying.
   =========================================================================
-  EDGE_FUNCTION_URL : URL of your deployed "jobcoach-view" Edge Function.
-    Format: https://YOUR-REF.supabase.co/functions/v1/jobcoach-view
+  EDGE_FUNCTION_URL  : URL of your deployed "jobcoach-view" Edge Function.
+  SUPABASE_ANON_KEY  : Your Supabase anon/public key — needed as an
+                       invocation header so Supabase lets the request
+                       reach the function. This is already public (it's
+                       in your intake form too). The actual data is still
+                       protected by the password inside the function.
   =========================================================================
 -->
 <script>
   window.JC_CONFIG = {
     EDGE_FUNCTION_URL: "https://ndypurygmnkxxgiozldm.supabase.co/functions/v1/jobcoach-view",
+    SUPABASE_ANON_KEY: "your-supabase-anon-key"
   };
 </script>
 
@@ -381,7 +386,11 @@
       // Send password to edge function; if wrong it returns 401.
       const resp = await fetch(cfg.EDGE_FUNCTION_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'apikey':        cfg.SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${cfg.SUPABASE_ANON_KEY}`,
+         },
         body: JSON.stringify({ password: pw }),
         credentials: 'omit',
       });
