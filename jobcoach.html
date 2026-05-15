@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>DevOps.global — Jobcoach Pipeline</title>
+
+<!--
+  =========================================================================
+  CONFIG — only one value to set here.
+  =========================================================================
+  EDGE_FUNCTION_URL : URL of your deployed "jobcoach-view" Edge Function.
+    Format: https://YOUR-REF.supabase.co/functions/v1/jobcoach-view
+  =========================================================================
+-->
+<script>
+  window.JC_CONFIG = {
+    EDGE_FUNCTION_URL: "https://ndypurygmnkxxgiozldm.supabase.co/functions/v1/jobcoach-view",
+  };
+</script>
+
+<style>
+  :root {
+    color-scheme: light;
+    --navy:       #0F2A44;
+    --navy-light: #1F4E78;
+    --accent:     #2E75B6;
+    --bg:         #F6F8FB;
+    --card:       #FFFFFF;
+    --text:       #1A2332;
+    --muted:      #5A6B82;
+    --border:     #D8E0EA;
+    --good:       #2E7D32;
+    --good-bg:    #E8F5E9;
+    --bad:        #C62828;
+    --bad-bg:     #FFEBEE;
+    --warn-bg:    #FFF8E1;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--navy);
+    color: white;
+    padding: 24px 24px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .header-brand h1 { font-size: 20px; font-weight: 700; }
+  .header-brand p  { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .header-right { font-size: 12px; opacity: 0.7; }
+
+  /* ── Gate ── */
+  #gateWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    padding: 24px;
+  }
+  .gate {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 36px 32px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 12px 24px rgba(15,42,68,0.10);
+    text-align: center;
+    max-width: 380px;
+    width: 100%;
+  }
+  .gate .lock { font-size: 40px; margin-bottom: 14px; }
+  .gate h2   { font-size: 18px; color: var(--navy); margin-bottom: 6px; }
+  .gate p    { font-size: 13px; color: var(--muted); margin-bottom: 22px; line-height: 1.6; }
+  .gate input {
+    width: 100%; padding: 11px 14px; font-size: 15px;
+    border: 1.5px solid var(--border); border-radius: 7px;
+    font-family: inherit; text-align: center; letter-spacing: 3px;
+    margin-bottom: 10px; background: var(--bg);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .gate input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(46,117,182,0.15);
+  }
+  .gate .gate-err {
+    color: var(--bad); font-size: 12px; margin-bottom: 10px;
+    min-height: 18px;
+  }
+  .gate .gate-err.show { display: block; }
+
+  /* ── Buttons ── */
+  button {
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    border: none; border-radius: 6px; cursor: pointer;
+    font-family: inherit; transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  button:hover:not(:disabled) { opacity: 0.88; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary   { background: var(--navy);   color: white; }
+  .btn-accent    { background: var(--accent);  color: white; }
+  .btn-muted     { background: #EFF4FA; color: var(--navy); border: 1px solid var(--border); }
+  .btn-green     { background: #2E7D32; color: white; }
+  .btn-full      { width: 100%; padding: 12px; font-size: 14px; }
+
+  /* ── Dashboard ── */
+  #dashboard { display: none; padding: 20px 20px 48px; }
+  #dashboard.show { display: block; }
+
+  .stats-bar {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat-chip {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 16px;
+    font-size: 13px; color: var(--muted);
+  }
+  .stat-chip strong { color: var(--navy); font-size: 18px; display: block; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .search-box {
+    padding: 8px 12px; font-size: 13px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-family: inherit; min-width: 240px; background: var(--card);
+  }
+  .search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(46,117,182,0.12); }
+  .export-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ── Table ── */
+  .table-card {
+    background: var(--card);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 12px rgba(15,42,68,0.06);
+    overflow-x: auto;
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    background: var(--navy); color: white;
+    padding: 10px 14px;
+    text-align: left; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    cursor: pointer; user-select: none;
+    white-space: nowrap; position: sticky; top: 0;
+  }
+  thead th:hover { background: var(--navy-light); }
+  thead th .si { margin-left: 3px; font-size: 9px; opacity: 0.45; }
+  thead th.asc  .si::after { content: '▲'; opacity: 1; }
+  thead th.desc .si::after { content: '▼'; opacity: 1; }
+
+  tbody tr:nth-child(even) { background: #F9FAFB; }
+  tbody tr:hover { background: #EFF6FC; }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    max-width: 220px;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 13px;
+  }
+  tbody td.nowrap { white-space: nowrap; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 12px; font-size: 11px; font-weight: 600;
+  }
+  .badge-A  { background: #E8F5E9; color: #2E7D32; }
+  .badge-B  { background: #E3F2FD; color: #1565C0; }
+  .badge-C  { background: #FFF8E1; color: #F57F17; }
+  .badge-def{ background: #F5F5F5; color: #616161; }
+
+  .cv-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; font-size: 11px; font-weight: 600;
+    background: var(--accent); color: white; border-radius: 5px;
+    text-decoration: none; cursor: pointer;
+  }
+  .cv-btn:hover { opacity: 0.85; }
+  .no-cv { color: var(--muted); font-size: 11px; }
+
+  .link-sm {
+    color: var(--accent); font-size: 11px;
+    text-decoration: none;
+    display: inline-block;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .link-sm:hover { text-decoration: underline; }
+
+  /* ── State overlays ── */
+  .state-box {
+    padding: 48px; text-align: center;
+    color: var(--muted); font-size: 14px;
+  }
+  .state-box .icon { font-size: 32px; margin-bottom: 10px; }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .err-bar {
+    background: var(--bad-bg); color: var(--bad);
+    border: 1px solid #EF9A9A; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 14px;
+    font-size: 13px; display: none;
+  }
+  .err-bar.show { display: block; }
+
+  .footer {
+    text-align: center; margin-top: 24px;
+    color: var(--muted); font-size: 11px;
+  }
+
+  @media (max-width: 640px) {
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .search-box { min-width: unset; width: 100%; }
+    #dashboard { padding: 14px 12px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <h1>DevOps.global</h1>
+    <p>Jobcoach Pipeline — Internal View</p>
+  </div>
+  <div class="header-right" id="sessionInfo"></div>
+</div>
+
+<!-- ── PASSWORD GATE ── -->
+<div id="gateWrap">
+  <div class="gate">
+    <div class="lock">🔒</div>
+    <h2>Internal access only</h2>
+    <p>Enter the password provided by your recruiter to view candidates cleared for Jobcoach.</p>
+    <div class="gate-err" id="gateErr"></div>
+    <input type="password" id="pwInput" placeholder="Password" autocomplete="current-password">
+    <button class="btn-primary btn-full" id="unlockBtn">View Pipeline →</button>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard">
+
+  <div class="stats-bar" id="statsBar"></div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <input class="search-box" type="search" id="searchBox"
+        placeholder="🔍  Search name, role, skills, location…">
+    </div>
+    <div class="export-row">
+      <button class="btn-muted" style="font-size:12px;padding:6px 12px" onclick="doExport('csv')">⬇ CSV</button>
+      <button class="btn-muted" style="font-size:12px;padding:6px 12px" onclick="doExport('json')">⬇ JSON</button>
+      <button class="btn-green" style="font-size:12px;padding:6px 12px" onclick="doExport('excel')">⬇ Excel</button>
+      <button class="btn-muted" style="font-size:12px;padding:6px 12px" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="err-bar" id="errBar"></div>
+
+  <div class="table-card">
+    <div id="stateBox" class="state-box">
+      <span class="spinner"></span> Loading candidates…
+    </div>
+    <table id="mainTable" style="display:none">
+      <thead><tr id="thead"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <p class="footer">DevOps.global · Jobcoach Pipeline · Confidential · CV links expire after 1 hour — refresh to regenerate</p>
+</div>
+
+<script>
+(() => {
+  const cfg = window.JC_CONFIG;
+
+  /* ── Column definitions ────────────────────────────────────────────────
+     [Header, db_key, render_fn_name?]
+     render_fn_name: 'date' | 'badge' | 'link' | 'linkedin' | 'bool' | null (plain text)
+  ─────────────────────────────────────────────────────────────────────── */
+  const COLS = [
+    ["#",                null,                   "rownum"   ],
+    ["Candidate ID",     "cv_storage_path",       "cand_id"  ],
+    ["Submitted",        "submitted_at",          "date"     ],
+    ["Name",             "name",                  null       ],
+    ["Email",            "email",                 null       ],
+    ["Phone",            "phone",                 null       ],
+    ["LinkedIn",         "linkedin",              "link"     ],
+    ["Location",         "location",              null       ],
+    ["Timezone",         "timezone",              null       ],
+    ["Current Role",     "current_role_name",     null       ],
+    ["Desired Role",     "desired_role",          null       ],
+    ["Yrs Exp.",         "years_experience",      null       ],
+    ["Languages",        "languages",             null       ],
+    ["Main Skills",      "main_skills",           null       ],
+    ["Frontend",         "frontend_skills",       null       ],
+    ["Backend",          "backend_skills",        null       ],
+    ["DevOps",           "devops_skills",         null       ],
+    ["Fullstack",        "fullstack_skills",      null       ],
+    ["English Level",    "english_level",         null       ],
+    ["English Interview","english_interview",     null       ],
+    ["Int'l Exp.",       "international_exp",     null       ],
+    ["Salary Exp.",      "salary_expectation",    null       ],
+    ["Work Model",       "work_model",            null       ],
+    ["Engagement",       "engagement_type",       null       ],
+    ["Availability",     "availability",          null       ],
+    ["Status",           "current_status",        null       ],
+    ["Stage",            "stage",                 null       ],
+    ["Priority",         "priority",              "badge"    ],
+    ["Recommendation",   "recommendation",        null       ],
+    ["Next Step",        "next_step",             null       ],
+    ["Next Step Date",   "next_step_date",        "date"     ],
+    ["Recruiter Notes",  "recruiter_comment",     null       ],
+    ["CV",               "__cv__",                "cv"       ],
+  ];
+
+  // ── State ──
+  let allRows  = [];
+  let filtered = [];
+  let sortKey  = null;
+  let sortDir  = 'asc';
+  let rowCount = 0;
+
+  // ── DOM ──
+  const gateWrap   = document.getElementById('gateWrap');
+  const dashboard  = document.getElementById('dashboard');
+  const pwInput    = document.getElementById('pwInput');
+  const unlockBtn  = document.getElementById('unlockBtn');
+  const gateErr    = document.getElementById('gateErr');
+  const searchBox  = document.getElementById('searchBox');
+  const statsBar   = document.getElementById('statsBar');
+  const errBar     = document.getElementById('errBar');
+  const stateBox   = document.getElementById('stateBox');
+  const mainTable  = document.getElementById('mainTable');
+  const theadRow   = document.getElementById('thead');
+  const tbodyEl    = document.getElementById('tbody');
+  const sessionInfo= document.getElementById('sessionInfo');
+
+  // ── Password / unlock ──────────────────────────────────────────────────
+  unlockBtn.addEventListener('click', tryUnlock);
+  pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+  pwInput.addEventListener('input',   () => { gateErr.textContent = ''; });
+
+  async function tryUnlock() {
+    const pw = pwInput.value.trim();
+    if (!pw) return;
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Checking…';
+    gateErr.textContent = '';
+
+    try {
+      // Send password to edge function; if wrong it returns 401.
+      const resp = await fetch(cfg.EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+        credentials: 'omit',
+      });
+
+      if (resp.status === 401) {
+        gateErr.textContent = '✗ Incorrect password. Try again.';
+        pwInput.value = '';
+        pwInput.focus();
+        return;
+      }
+
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error ?? `Error ${resp.status}`);
+
+      // Success — store data and show dashboard
+      gateWrap.style.display = 'none';
+      dashboard.classList.add('show');
+      sessionInfo.textContent = `Loaded ${new Date().toLocaleTimeString()}`;
+
+      allRows  = data.candidates ?? [];
+      filtered = allRows;
+      buildStats();
+      buildTable();
+
+    } catch (err) {
+      gateErr.textContent = `Error: ${err.message}`;
+    } finally {
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = 'View Pipeline →';
+    }
+  }
+
+  // ── Refresh ──────────────────────────────────────────────────────────
+  window.loadData = async function () {
+    stateBox.style.display  = 'block';
+    stateBox.innerHTML = '<span class="spinner"></span> Refreshing…';
+    mainTable.style.display = 'none';
+    errBar.classList.remove('show');
+
+    // We need to re-auth — but we don't have the password in memory.
+    // Instead, show the gate again so the user re-enters it.
+    gateWrap.style.display = '';
+    dashboard.classList.remove('show');
+    pwInput.value = '';
+    pwInput.focus();
+  };
+
+  // ── Stats bar ──────────────────────────────────────────────────────────
+  function buildStats() {
+    const total = allRows.length;
+    const withCV = allRows.filter(r => r.cv_url).length;
+    const roles  = {};
+    allRows.forEach(r => {
+      const role = r.desired_role || 'Unknown';
+      roles[role] = (roles[role] || 0) + 1;
+    });
+    const topRole = Object.entries(roles).sort((a,b)=>b[1]-a[1])[0];
+
+    statsBar.innerHTML = `
+      <div class="stat-chip"><strong>${total}</strong>Jobcoach Candidates</div>
+      <div class="stat-chip"><strong>${withCV}</strong>With CV</div>
+      ${topRole ? `<div class="stat-chip"><strong>${topRole[1]}</strong>${esc(topRole[0])}</div>` : ''}
+    `;
+  }
+
+  // ── Build table header ─────────────────────────────────────────────────
+  function buildHeader() {
+    theadRow.innerHTML = '';
+    COLS.forEach(([label, key]) => {
+      const th = document.createElement('th');
+      th.innerHTML = `${esc(label)} <span class="si"></span>`;
+      if (key && key !== '__cv__') {
+        if (key === sortKey) th.classList.add(sortDir);
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => onSort(key));
+      }
+      theadRow.appendChild(th);
+    });
+  }
+
+  // ── Render rows ────────────────────────────────────────────────────────
+  function renderRows(rows) {
+    tbodyEl.innerHTML = '';
+
+    if (!rows.length) {
+      stateBox.style.display  = 'block';
+      stateBox.innerHTML = '<div class="icon">📭</div>No candidates match your search.';
+      mainTable.style.display = 'none';
+      return;
+    }
+
+    stateBox.style.display  = 'none';
+    mainTable.style.display = 'table';
+
+    rows.forEach((row, idx) => {
+      const tr = document.createElement('tr');
+      COLS.forEach(([, key, renderer]) => {
+        const td = document.createElement('td');
+        const val = key === '__cv__' ? null : (row[key] ?? '');
+
+        switch (renderer) {
+          case 'rownum':
+            td.textContent = idx + 1;
+            td.classList.add('nowrap');
+            td.style.color = 'var(--muted)';
+            break;
+
+          case 'cand_id': {
+            // Strip folder prefix e.g. "2026-05/filename.pdf" → "filename.pdf"
+            const path = row['cv_storage_path'] ?? '';
+            const filename = path.replace(/^[^/]+\//, '');
+            td.textContent = filename || '—';
+            td.classList.add('nowrap');
+            td.style.fontFamily = 'monospace';
+            td.style.fontSize   = '11px';
+            td.style.color      = 'var(--muted)';
+            break;
+          }
+
+          case 'date':
+            td.textContent = val
+              ? new Date(val).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+              : '—';
+            td.classList.add('nowrap');
+            break;
+
+          case 'badge': {
+            const v = val.toString().toUpperCase();
+            const cls = v === 'A' ? 'badge-A' : v === 'B' ? 'badge-B' : v === 'C' ? 'badge-C' : 'badge-def';
+            td.innerHTML = val ? `<span class="badge ${cls}">${esc(val)}</span>` : '<span style="color:var(--muted)">—</span>';
+            break;
+          }
+
+          case 'link':
+            td.innerHTML = val
+              ? `<a class="link-sm" href="${esc(val)}" target="_blank" rel="noopener" title="${esc(val)}">LinkedIn ↗</a>`
+              : '<span class="no-cv">—</span>';
+            break;
+
+          case 'bool':
+            td.textContent = val === true ? 'Yes' : val === false ? 'No' : '—';
+            break;
+
+          case 'cv': {
+            const cvUrl  = row['cv_url'];
+            const cvName = row['cv_original_name'] ?? 'Download CV';
+            if (cvUrl) {
+              const a = document.createElement('a');
+              a.className = 'cv-btn';
+              a.href      = cvUrl;
+              a.target    = '_blank';
+              a.rel       = 'noopener';
+              a.download  = cvName;
+              a.textContent = '⬇ CV';
+              td.appendChild(a);
+            } else {
+              td.innerHTML = '<span class="no-cv">No CV</span>';
+            }
+            td.classList.add('nowrap');
+            break;
+          }
+
+          default:
+            td.textContent = val !== null && val !== '' ? val : '—';
+        }
+
+        tr.appendChild(td);
+      });
+      tbodyEl.appendChild(tr);
+    });
+  }
+
+  function buildTable() {
+    buildHeader();
+    renderRows(filtered);
+  }
+
+  // ── Sort ───────────────────────────────────────────────────────────────
+  function onSort(key) {
+    if (sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortKey = key; sortDir = 'asc'; }
+    filtered = [...filtered].sort((a, b) => {
+      const av = (a[key] ?? '').toString().toLowerCase();
+      const bv = (b[key] ?? '').toString().toLowerCase();
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    buildTable();
+  }
+
+  // ── Search ─────────────────────────────────────────────────────────────
+  searchBox.addEventListener('input', () => {
+    const q = searchBox.value.toLowerCase().trim();
+    filtered = q
+      ? allRows.filter(r =>
+          COLS.some(([, key]) => key && key !== '__cv__'
+            ? (r[key] ?? '').toString().toLowerCase().includes(q)
+            : false)
+        )
+      : allRows;
+    buildTable();
+  });
+
+  // ── Exports ────────────────────────────────────────────────────────────
+  window.doExport = function(fmt) {
+    const exportCols = COLS.filter(([, key, r]) => key && key !== '__cv__' && r !== 'rownum');
+
+    if (fmt === 'csv') {
+      const header = exportCols.map(([l]) => `"${l}"`).join(',');
+      const rows   = filtered.map(r =>
+        exportCols.map(([, k, renderer]) => {
+          let v = r[k] ?? '';
+          if (renderer === 'cand_id') v = (r['cv_storage_path'] ?? '').replace(/^[^/]+\//, '');
+          if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
+          if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
+          return `"${v.toString().replace(/"/g,'""')}"`;
+        }).join(',')
+      ).join('\n');
+      // Also append cv_url column
+      const csvHeader = header + ',"CV URL"';
+      const csvRows   = rows.split('\n').map((row, i) => {
+        const cv = filtered[i]?.cv_url ?? '';
+        return row + `,"${cv}"`;
+      }).join('\n');
+      download(`jobcoach_candidates_${today()}.csv`, 'text/csv', csvHeader + '\n' + csvRows);
+    }
+
+    else if (fmt === 'json') {
+      const out = filtered.map(r => {
+        const o = {};
+        exportCols.forEach(([l, k, renderer]) => {
+          let v = r[k] ?? null;
+          if (renderer === 'cand_id') v = (r['cv_storage_path'] ?? '').replace(/^[^/]+\//, '');
+          o[l] = v;
+        });
+        o['CV URL'] = r.cv_url ?? null;
+        return o;
+      });
+      download(`jobcoach_candidates_${today()}.json`, 'application/json', JSON.stringify(out, null, 2));
+    }
+
+    else if (fmt === 'excel') {
+      let html = '<html><head><meta charset="UTF-8"></head><body><table>';
+      html += '<tr>' + exportCols.map(([l]) => `<th>${esc(l)}</th>`).join('') + '<th>CV URL</th></tr>';
+      filtered.forEach(r => {
+        html += '<tr>';
+        exportCols.forEach(([, k, renderer]) => {
+          let v = r[k] ?? '';
+          if (renderer === 'cand_id') v = (r['cv_storage_path'] ?? '').replace(/^[^/]+\//, '');
+          if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
+          if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
+          html += `<td>${esc(v.toString())}</td>`;
+        });
+        html += `<td>${esc(r.cv_url ?? '')}</td>`;
+        html += '</tr>';
+      });
+      html += '</table></body></html>';
+      download(`jobcoach_candidates_${today()}.xls`, 'application/vnd.ms-excel', html);
+    }
+  };
+
+  function download(name, mime, content) {
+    const blob = new Blob([content], { type: mime });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 800);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function today() { return new Date().toISOString().split('T')[0]; }
+  function esc(s)  {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+})();
+</script>
+
+</body>
+</html>
