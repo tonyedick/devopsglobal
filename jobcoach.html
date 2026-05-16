@@ -307,8 +307,8 @@
     ["LinkedIn",         "linkedin",              "link"     ],
     ["Location",         "location",              null       ],
     ["Timezone",         "timezone",              null       ],
-    ["Current Role",     "current_role_name",     null       ],
     ["Status",           "current_status",        "wider"       ],
+    ["Current Role",     "current_role_name",     null       ],
     ["Desired Role",     "desired_role",          null       ],
     ["Yrs Exp.",         "years_experience",      null       ],
     ["Languages",        "languages",             null       ],
@@ -316,11 +316,10 @@
     ["English Level",    "english_level",         null       ],
     ["Salary Exp.",      "salary_expectation",    null       ],
     ["Work Model",       "work_model",            "wider"       ],
-    ["Engagement",       "engagement_type",       null       ],
     ["Availability",     "availability",          null       ],
     ["Priority",         "priority",              "badge"    ],
     ["Stage",            "stage",                 "wider"       ],
-    ["Recruiter Notes",  "recruiter_comment",     "wider"       ],                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+    ["Recommendation",  "recommendation",     "wider"       ],                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
     ["CV",               "__cv__",                "cv"       ],
   ];
 
@@ -385,9 +384,9 @@
       dashboard.classList.add('show');
 
          // ── FIX 1: Time with local timezone ──
-      sessionInfo.textContent = `Loaded ${new Date().toLocaleTimeString([], {
-        hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
-      })}`;
+      sessionInfo.textContent = 'Week Ending - May 15 2026, 17:30 GMT+2';
+
+       // ── FIX 2: CV URLs may expire after some time, so we store them separately and regenerate on refresh ──
 
       allRows  = data.candidates ?? [];
       filtered = allRows;
@@ -512,7 +511,7 @@
 
           case 'truncate': {
             const full = val.toString();
-            td.textContent = full.length > 20 ? full.slice(0, 20) + '…' : full;
+            td.textContent = full.length > 40 ? full.slice(0, 40) + '…' : full;
             td.title = full; // hover to see full text
             break;
           }
