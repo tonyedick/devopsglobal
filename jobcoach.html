@@ -526,8 +526,9 @@
 
           case 'truncate': {
             const full = val.toString();
-            td.textContent = full.length > 40 ? full.slice(0, 40) + '…' : full;
+            td.textContent = full.length > 60 ? full.slice(0, 60) + '…' : full;
             td.title = full; // hover to see full text
+            td.style.minWidth = '220px';
             break;
           }
 
