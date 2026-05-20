@@ -51,17 +51,7 @@
   }
   .header-brand h1 { font-size: 20px; font-weight: 700; }
   .header-brand p  { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-  .header-right { font-size: 12px; opacity: 0.85; display: flex; gap: 12px; align-items: center; }
-  .week-select-wrap { display: flex; align-items: center; gap: 8px; }
-  .week-select-wrap label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.6px; }
-  .week-select-wrap select {
-    background: rgba(255,255,255,0.10); color: white;
-    border: 1px solid rgba(255,255,255,0.25); border-radius: 6px;
-    padding: 6px 10px; font-size: 13px; font-family: inherit;
-    cursor: pointer; min-width: 200px;
-  }
-  .week-select-wrap select:focus { outline: none; border-color: rgba(255,255,255,0.6); }
-  .week-select-wrap select option { color: var(--text); background: white; }
+  .header-right { font-size: 12px; opacity: 0.7; }
 
   /* ── Gate ── */
   #gateWrap {
@@ -252,12 +242,7 @@
     <h1>DevOps.global</h1>
     <p>Jobcoach Pipeline — Internal View</p>
   </div>
-  <div class="header-right" id="sessionInfo">
-    <div class="week-select-wrap" id="weekSelectWrap" style="display:none">
-      <label for="weekSelect">Week ending</label>
-      <select id="weekSelect"></select>
-    </div>
-  </div>
+  <div class="header-right" id="sessionInfo"></div>
 </div>
 
 <!-- ── PASSWORD GATE ── -->
@@ -358,8 +343,6 @@
   const theadRow   = document.getElementById('thead');
   const tbodyEl    = document.getElementById('tbody');
   const sessionInfo= document.getElementById('sessionInfo');
-  const weekSelect = document.getElementById('weekSelect');
-  const weekSelectWrap = document.getElementById('weekSelectWrap');
 
   // ── Password / unlock ──────────────────────────────────────────────────
   unlockBtn.addEventListener('click', tryUnlock);
@@ -400,11 +383,13 @@
       gateWrap.style.display = 'none';
       dashboard.classList.add('show');
 
-      // CV URLs may expire after 1 hour — Refresh button regenerates them.
+         // ── FIX 1: Time with local timezone ──
+      sessionInfo.textContent = 'Week Ending - May 15 2026, 17:30 GMT+2';
+
+       // ── FIX 2: CV URLs may expire after some time, so we store them separately and regenerate on refresh ──
 
       allRows  = data.candidates ?? [];
-      buildWeekSelect();          // populate week dropdown from candidates
-      applyWeekFilter();          // default to current week's Friday
+      filtered = allRows;
       buildStats();
       buildTable();
 
@@ -503,6 +488,11 @@
             td.textContent = val || '—';
             td.style.minWidth = '180px';
             break;
+          
+          case 'widest':
+            td.textContent = val || '—';
+            td.style.minWidth = '240px';
+            break;
 
           case 'rownum':
             td.textContent = idx + 1;
@@ -526,8 +516,9 @@
 
           case 'truncate': {
             const full = val.toString();
-            td.textContent = full.length > 40 ? full.slice(0, 40) + '…' : full;
+            td.textContent = full.length > 60 ? full.slice(0, 60) + '…' : full;
             td.title = full; // hover to see full text
+            td.style.minWidth = '240px';
             break;
           }
 
@@ -588,101 +579,18 @@
     buildTable();
   }
 
-  // ── Week filter ────────────────────────────────────────────────────────
-  // Mon-Fri work week convention. Each candidate's next_step_date is mapped
-  // to the Friday of its work week. Saturday and Sunday fall into the
-  // previous Friday's week (treated as weekend belonging to the just-ended
-  // work week).
-  function fridayOfWorkWeek(input) {
-    const d = new Date(input);
-    if (isNaN(d.getTime())) return null;
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay(); // 0=Sun, 1=Mon … 5=Fri, 6=Sat
-    let delta;
-    if (day === 0) delta = -2;        // Sun → previous Fri
-    else if (day === 6) delta = -1;   // Sat → previous Fri
-    else delta = 5 - day;             // Mon→+4 … Fri→0
-    d.setDate(d.getDate() + delta);
-    return d;
-  }
-
-  function isoDate(d) {
-    return d.toISOString().slice(0, 10);
-  }
-
-  function formatWeekLabel(isoFri) {
-    const d = new Date(isoFri);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
-  function buildWeekSelect() {
-    weekSelect.innerHTML = '';
-
-    // Collect every Friday that any candidate maps into
-    const fridays = new Set();
-    allRows.forEach(r => {
-      if (r.next_step_date) {
-        const fri = fridayOfWorkWeek(r.next_step_date);
-        if (fri) fridays.add(isoDate(fri));
-      }
-    });
-    // Always include current week even if empty so manager sees "this week"
-    const todayFri = fridayOfWorkWeek(new Date());
-    if (todayFri) fridays.add(isoDate(todayFri));
-
-    const sorted = [...fridays].sort().reverse(); // most recent first
-    const todayFriIso = todayFri ? isoDate(todayFri) : null;
-
-    // "All weeks" option at the top
-    const allOpt = document.createElement('option');
-    allOpt.value = '';
-    allOpt.textContent = 'All weeks';
-    weekSelect.appendChild(allOpt);
-
-    sorted.forEach(isoFri => {
-      const opt = document.createElement('option');
-      opt.value = isoFri;
-      let label = formatWeekLabel(isoFri);
-      if (isoFri === todayFriIso) label += '  ·  this week';
-      opt.textContent = label;
-      weekSelect.appendChild(opt);
-    });
-
-    // Default selection: current week if it exists, else most recent week
-    weekSelect.value = todayFriIso && sorted.includes(todayFriIso)
-      ? todayFriIso
-      : (sorted[0] || '');
-
-    weekSelectWrap.style.display = '';
-  }
-
-  function applyWeekFilter() {
-    const sel = weekSelect.value;
-    const q   = searchBox.value.toLowerCase().trim();
-
-    filtered = allRows.filter(r => {
-      // Week filter
-      if (sel) {
-        if (!r.next_step_date) return false;
-        const fri = fridayOfWorkWeek(r.next_step_date);
-        if (!fri || isoDate(fri) !== sel) return false;
-      }
-      // Search filter
-      if (q) {
-        const matches = COLS.some(([, key]) => key && key !== '__cv__'
-          ? (r[key] ?? '').toString().toLowerCase().includes(q)
-          : false);
-        if (!matches) return false;
-      }
-      return true;
-    });
-    buildTable();
-  }
-
-  weekSelect.addEventListener('change', applyWeekFilter);
-
   // ── Search ─────────────────────────────────────────────────────────────
-  searchBox.addEventListener('input', applyWeekFilter);
+  searchBox.addEventListener('input', () => {
+    const q = searchBox.value.toLowerCase().trim();
+    filtered = q
+      ? allRows.filter(r =>
+          COLS.some(([, key]) => key && key !== '__cv__'
+            ? (r[key] ?? '').toString().toLowerCase().includes(q)
+            : false)
+        )
+      : allRows;
+    buildTable();
+  });
 
   // ── Exports ────────────────────────────────────────────────────────────
   window.doExport = function(fmt) {

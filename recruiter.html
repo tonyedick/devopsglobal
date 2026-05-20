@@ -1,12 +1,10 @@
-
-<!-- newnew -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<title>DevOps.global — Jobcoach Pipeline</title>
+<title>DevOps.global — Recruiter Pipeline (All Candidates)</title>
 
 <!-- Runtime config — values injected from Cloudflare env vars, never hardcoded -->
 <script src="./api/config.js"></script>
@@ -52,16 +50,12 @@
   .header-brand h1 { font-size: 20px; font-weight: 700; }
   .header-brand p  { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
   .header-right { font-size: 12px; opacity: 0.85; display: flex; gap: 12px; align-items: center; }
-  .week-select-wrap { display: flex; align-items: center; gap: 8px; }
-  .week-select-wrap label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.6px; }
-  .week-select-wrap select {
-    background: rgba(255,255,255,0.10); color: white;
-    border: 1px solid rgba(255,255,255,0.25); border-radius: 6px;
-    padding: 6px 10px; font-size: 13px; font-family: inherit;
-    cursor: pointer; min-width: 200px;
+  .header-right a {
+    color: white; opacity: 0.7; text-decoration: none;
+    border-bottom: 1px dotted rgba(255,255,255,0.4);
+    padding-bottom: 1px;
   }
-  .week-select-wrap select:focus { outline: none; border-color: rgba(255,255,255,0.6); }
-  .week-select-wrap select option { color: var(--text); background: white; }
+  .header-right a:hover { opacity: 1; }
 
   /* ── Gate ── */
   #gateWrap {
@@ -136,6 +130,13 @@
     margin-bottom: 14px;
   }
   .toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .toolbar-left select {
+    padding: 8px 10px; font-size: 13px;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--card); font-family: inherit;
+    color: var(--text);
+  }
+  .toolbar-left select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(46,117,182,0.12); }
   .search-box {
     padding: 8px 12px; font-size: 13px;
     border: 1px solid var(--border); border-radius: 6px;
@@ -154,13 +155,13 @@
   }
   table {
     width: 100%; border-collapse: collapse;
-    font-size: 13px;
+    font-size: 12.5px;
   }
   thead th {
     background: var(--navy); color: white;
-    padding: 10px 14px;
-    text-align: left; font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.6px;
+    padding: 10px 12px;
+    text-align: left; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.5px;
     cursor: pointer; user-select: none;
     white-space: nowrap; position: sticky; top: 0;
   }
@@ -172,13 +173,13 @@
   tbody tr:nth-child(even) { background: #F9FAFB; }
   tbody tr:hover { background: #EFF6FC; }
   tbody td {
-    padding: 9px 14px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--border);
     vertical-align: top;
-    max-width: 220px;
+    max-width: 280px;
     white-space: normal;
     word-break: break-word;
-    font-size: 13px;
+    font-size: 12.5px;
   }
   tbody td.nowrap { white-space: nowrap; }
 
@@ -186,10 +187,17 @@
     display: inline-block; padding: 2px 8px;
     border-radius: 12px; font-size: 11px; font-weight: 600;
   }
-  .badge-A  { background: #E8F5E9; color: #2E7D32; }
-  .badge-B  { background: #E3F2FD; color: #1565C0; }
-  .badge-C  { background: #FFF8E1; color: #F57F17; }
-  .badge-def{ background: #F5F5F5; color: #616161; }
+  .badge-A     { background: #E8F5E9; color: #2E7D32; }
+  .badge-B     { background: #E3F2FD; color: #1565C0; }
+  .badge-C     { background: #FFF8E1; color: #F57F17; }
+  .badge-def   { background: #F5F5F5; color: #616161; }
+  .badge-stage { background: #ECEFF1; color: #37474F; font-weight: 500; }
+  .badge-rec-ready  { background: #E8F5E9; color: #2E7D32; }
+  .badge-rec-pool   { background: #E3F2FD; color: #1565C0; }
+  .badge-rec-not    { background: #FFEBEE; color: #C62828; }
+  .badge-rec-open   { background: #F3E5F5; color: #6A1B9A; }
+  .badge-yes        { background: #E8F5E9; color: #2E7D32; }
+  .badge-no         { background: #FFEBEE; color: #C62828; }
 
   .cv-btn {
     display: inline-flex; align-items: center; gap: 4px;
@@ -204,12 +212,18 @@
     color: var(--accent); font-size: 11px;
     text-decoration: none;
     display: inline-block;
-    max-width: 160px;
+    max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    vertical-align: middle;
   }
   .link-sm:hover { text-decoration: underline; }
+
+  .mono-sm {
+    font-family: 'SF Mono', Monaco, 'Cascadia Mono', 'Roboto Mono', monospace;
+    font-size: 11px; color: var(--muted);
+  }
 
   /* ── State overlays ── */
   .state-box {
@@ -250,13 +264,10 @@
 <div class="header">
   <div class="header-brand">
     <h1>DevOps.global</h1>
-    <p>Jobcoach Pipeline — Internal View</p>
+    <p>Recruiter Pipeline — All Candidates · Internal View</p>
   </div>
   <div class="header-right" id="sessionInfo">
-    <div class="week-select-wrap" id="weekSelectWrap" style="display:none">
-      <label for="weekSelect">Week ending</label>
-      <select id="weekSelect"></select>
-    </div>
+    <a href="./jobcoach.html">Jobcoach view →</a>
   </div>
 </div>
 
@@ -264,11 +275,11 @@
 <div id="gateWrap">
   <div class="gate">
     <div class="lock">🔒</div>
-    <h2>Internal access only</h2>
-    <p>Enter the password provided by your recruiter to view candidates cleared for Jobcoach.</p>
+    <h2>Recruiter access only</h2>
+    <p>Enter your recruiter password to view all candidate submissions. This view shows every row in the database, regardless of stage or priority.</p>
     <div class="gate-err" id="gateErr"></div>
     <input type="password" id="pwInput" placeholder="Password" autocomplete="current-password">
-    <button class="btn-primary btn-full" id="unlockBtn">View Pipeline →</button>
+    <button class="btn-primary btn-full" id="unlockBtn">View All Candidates →</button>
   </div>
 </div>
 
@@ -280,7 +291,23 @@
   <div class="toolbar">
     <div class="toolbar-left">
       <input class="search-box" type="search" id="searchBox"
-        placeholder="🔍  Search name, role, skills, location…">
+        placeholder="🔍  Search any field…">
+      <select id="priorityFilter">
+        <option value="">All priorities</option>
+        <option value="A">A only</option>
+        <option value="B">B only</option>
+        <option value="C">C only</option>
+        <option value="__none__">Unranked</option>
+      </select>
+      <select id="stageFilter">
+        <option value="">All stages</option>
+        <option value="New">New</option>
+        <option value="Stage 1: Rec Check">Stage 1: Rec Check</option>
+        <option value="Stage 2: Tech Assess">Stage 2: Tech Assess</option>
+        <option value="Stage 3: Jobcoach">Stage 3: Jobcoach</option>
+        <option value="Client-Ready">Client-Ready</option>
+        <option value="Rejected">Rejected</option>
+      </select>
     </div>
     <div class="export-row">
       <button class="btn-muted" style="font-size:12px;padding:6px 12px" onclick="doExport('csv')">⬇ CSV</button>
@@ -303,39 +330,71 @@
     </table>
   </div>
 
-  <p class="footer">DevOps.global · Jobcoach Pipeline · Confidential · CV links expire after 1 hour — refresh to regenerate</p>
+  <p class="footer">DevOps.global · Recruiter Pipeline · Confidential · CV links expire after 1 hour — refresh to regenerate · The on-page priority/stage filters are convenience filters, not access controls</p>
 </div>
 
 <script>
 (() => {
   const cfg = window.DEVOPS_GLOBAL_CONFIG;
 
-  /* ── Column definitions ────────────────────────────────────────────────
-     [Header, db_key, render_fn_name?]
-     render_fn_name: 'date' | 'badge' | 'link' | 'linkedin' | 'bool' | null (plain text)
+  /* ── Column definitions — EVERY candidate-relevant field in intake.candidates ──
+     [Header, db_key, render_fn, min_width_px?]
+     render_fn: 'date' | 'datetime' | 'badge' | 'badge-stage' | 'badge-recommendation'
+              | 'badge-yesno' | 'link' | 'mono' | 'truncate' | 'wider' | 'cv' | 'rownum' | null
   ─────────────────────────────────────────────────────────────────────── */
   const COLS = [
-    ["#",                null,                   "rownum"   ],
-    ["Name",             "name",                  "wider"       ],
-    ["Email",            "email",                 "wider"       ],
-    ["Phone",            "phone",                 "wider"       ],
-    ["LinkedIn",         "linkedin",              "link"     ],
-    ["Location",         "location",              null       ],
-    ["Timezone",         "timezone",              null       ],
-    ["Status",           "current_status",        "wider"       ],
-    ["Current Role",     "current_role_name",     null       ],
-    ["Desired Role",     "desired_role",          null       ],
-    ["Yrs Exp.",         "years_experience",      null       ],
-    ["Languages",        "languages",             null       ],
-    ["Main Skills",      "main_skills",           "truncate" ],
-    ["English Level",    "english_level",         null       ],
-    ["Salary Exp.",      "salary_expectation",    null       ],
-    ["Work Model",       "work_model",            "wider"       ],
-    ["Availability",     "availability",          null       ],
-    ["Priority",         "priority",              "badge"    ],
-    ["Stage",            "stage",                 "wider"       ],
-    ["Recommendation",  "recommendation",     "wider"       ],                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-    ["CV",               "__cv__",                "cv"       ],
+    ["#",                   null,                    "rownum"   ],
+    ["Submitted",           "submitted_at",          "datetime" ],
+    ["Name",                "name",                  "wider"    ],
+    ["Email",               "email",                 "wider"    ],
+    ["Phone",               "phone",                 "wider"    ],
+    ["LinkedIn",            "linkedin",              "link"     ],
+    ["Location",            "location",              null       ],
+    ["Timezone",            "timezone",              null       ],
+
+    ["Current Role",        "current_role_name",     null       ],
+    ["Desired Role",        "desired_role",          null       ],
+    ["Yrs Exp.",            "years_experience",      null       ],
+    ["Languages",           "languages",             null       ],
+
+    ["Main Skills",         "main_skills",           "truncate" ],
+    ["Frontend Skills",     "frontend_skills",       "truncate" ],
+    ["Backend Skills",      "backend_skills",        "truncate" ],
+    ["DevOps Skills",       "devops_skills",         "truncate" ],
+    ["Fullstack Skills",    "fullstack_skills",      "truncate" ],
+    ["Proud Project",       "proud_project",         "truncate" ],
+    ["Portfolio",           "portfolio_url",         "link-url" ],
+    ["GitHub",              "github_url",            "link-url" ],
+
+    ["Availability",        "availability",          null       ],
+    ["Status",              "current_status",        "wider"    ],
+    ["Salary Exp.",         "salary_expectation",    null       ],
+    ["Engagement",          "engagement_type",       null       ],
+    ["Work Model",          "work_model",            "wider"    ],
+    ["Other Processes",     "other_processes",       null       ],
+
+    ["English Level",       "english_level",         null       ],
+    ["Interview English",   "english_interview",     null       ],
+    ["Intl. Experience",    "international_exp",     "truncate" ],
+
+    ["Pool Consent",        "consent_pool",          "badge-yesno"],
+    ["Intro Consent",       "consent_intro",         "badge-yesno"],
+    ["Jobcoach Consent",    "consent_jobcoach",      "badge-yesno"],
+
+    ["Notes",               "notes",                 "truncate" ],
+
+    ["Priority",            "priority",              "badge"    ],
+    ["Stage",               "stage",                 "badge-stage"],
+    ["Recommendation",      "recommendation",        "badge-recommendation"],
+    ["Next Step",           "next_step",             "truncate" ],
+    ["Next Step Date",      "next_step_date",        "date"     ],
+    ["Recruiter Comment",   "recruiter_comment",     "truncate" ],
+
+    ["CV",                  "__cv__",                "cv"       ],
+    ["CV Filename",         "cv_original_name",      "mono"     ],
+    ["CV Size",             "cv_size_bytes",         "filesize" ],
+
+    ["ID",                  "id",                    "mono"     ],
   ];
 
   // ── State ──
@@ -345,21 +404,20 @@
   let sortDir  = 'asc';
 
   // ── DOM ──
-  const gateWrap   = document.getElementById('gateWrap');
-  const dashboard  = document.getElementById('dashboard');
-  const pwInput    = document.getElementById('pwInput');
-  const unlockBtn  = document.getElementById('unlockBtn');
-  const gateErr    = document.getElementById('gateErr');
-  const searchBox  = document.getElementById('searchBox');
-  const statsBar   = document.getElementById('statsBar');
-  const errBar     = document.getElementById('errBar');
-  const stateBox   = document.getElementById('stateBox');
-  const mainTable  = document.getElementById('mainTable');
-  const theadRow   = document.getElementById('thead');
-  const tbodyEl    = document.getElementById('tbody');
-  const sessionInfo= document.getElementById('sessionInfo');
-  const weekSelect = document.getElementById('weekSelect');
-  const weekSelectWrap = document.getElementById('weekSelectWrap');
+  const gateWrap        = document.getElementById('gateWrap');
+  const dashboard       = document.getElementById('dashboard');
+  const pwInput         = document.getElementById('pwInput');
+  const unlockBtn       = document.getElementById('unlockBtn');
+  const gateErr         = document.getElementById('gateErr');
+  const searchBox       = document.getElementById('searchBox');
+  const priorityFilter  = document.getElementById('priorityFilter');
+  const stageFilter     = document.getElementById('stageFilter');
+  const statsBar        = document.getElementById('statsBar');
+  const errBar          = document.getElementById('errBar');
+  const stateBox        = document.getElementById('stateBox');
+  const mainTable       = document.getElementById('mainTable');
+  const theadRow        = document.getElementById('thead');
+  const tbodyEl         = document.getElementById('tbody');
 
   // ── Password / unlock ──────────────────────────────────────────────────
   unlockBtn.addEventListener('click', tryUnlock);
@@ -374,8 +432,7 @@
     gateErr.textContent = '';
 
     try {
-      // Send password to edge function; if wrong it returns 401.
-      const resp = await fetch(cfg.SUPABASE_FUNCTIONS_BASE + '/jobcoach-view', {
+      const resp = await fetch(cfg.SUPABASE_FUNCTIONS_BASE + '/recruiter-view', {
         method: 'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -400,11 +457,8 @@
       gateWrap.style.display = 'none';
       dashboard.classList.add('show');
 
-      // CV URLs may expire after 1 hour — Refresh button regenerates them.
-
       allRows  = data.candidates ?? [];
-      buildWeekSelect();          // populate week dropdown from candidates
-      applyWeekFilter();          // default to current week's Friday
+      filtered = [...allRows];
       buildStats();
       buildTable();
 
@@ -412,7 +466,7 @@
       gateErr.textContent = `Error: ${err.message}`;
     } finally {
       unlockBtn.disabled = false;
-      unlockBtn.textContent = 'View Pipeline →';
+      unlockBtn.textContent = 'View All Candidates →';
     }
   }
 
@@ -431,36 +485,45 @@
 
   // ── Stats bar ──────────────────────────────────────────────────────────
   function buildStats() {
-    const total = allRows.length;
-    const withCV = allRows.filter(r => r.cv_url).length;
+    const total  = allRows.length;
+    const withCV = allRows.filter(r => r.cv_url || r.cv_storage_path).length;
 
-    const roles  = {};
+    const byPriority = { A: 0, B: 0, C: 0, __none__: 0 };
     allRows.forEach(r => {
-      const role = r.desired_role || 'Unknown';
-      roles[role] = (roles[role] || 0) + 1;
+      const p = (r.priority || '__none__').toUpperCase();
+      if (byPriority[p] !== undefined) byPriority[p]++;
+      else byPriority.__none__++;
     });
 
-      const roleChips = Object.entries(roles)
+    const byStage = {};
+    allRows.forEach(r => {
+      const s = r.stage || 'Unset';
+      byStage[s] = (byStage[s] || 0) + 1;
+    });
+
+    const stageChips = Object.entries(byStage)
       .sort((a, b) => b[1] - a[1])
-      .map(([role, count]) =>
-        `<div class="stat-chip"><strong>${count}</strong>${esc(role)}</div>`
-      ).join('');
+      .map(([s, n]) => `<div class="stat-chip"><strong>${n}</strong>${esc(s)}</div>`)
+      .join('');
 
     statsBar.innerHTML = `
-      <div class="stat-chip"><strong>${total}</strong>Jobcoach Candidates</div>
+      <div class="stat-chip"><strong>${total}</strong>Total Candidates</div>
       <div class="stat-chip"><strong>${withCV}</strong>With CV</div>
-      ${roleChips}
+      <div class="stat-chip"><strong>${byPriority.A}</strong>Priority A</div>
+      <div class="stat-chip"><strong>${byPriority.B}</strong>Priority B</div>
+      <div class="stat-chip"><strong>${byPriority.C}</strong>Priority C</div>
+      <div class="stat-chip"><strong>${byPriority.__none__}</strong>Unranked</div>
+      ${stageChips}
     `;
   }
 
   // ── Build table header ─────────────────────────────────────────────────
   function buildHeader() {
-    // Set column widths via <colgroup>
     const colgroup = document.getElementById('colgroup');
     colgroup.innerHTML = '';
-    COLS.forEach(([,,,width]) => {
+    COLS.forEach(([, , , minW]) => {
       const col = document.createElement('col');
-      if (width) col.style.minWidth = width + 'px';
+      if (minW) col.style.minWidth = minW + 'px';
       colgroup.appendChild(col);
     });
 
@@ -483,7 +546,7 @@
 
     if (!rows.length) {
       stateBox.style.display  = 'block';
-      stateBox.innerHTML = '<div class="icon">📭</div>No candidates match your search.';
+      stateBox.innerHTML = '<div class="icon">📭</div>No candidates match your filters.';
       mainTable.style.display = 'none';
       return;
     }
@@ -495,19 +558,19 @@
       const tr = document.createElement('tr');
       COLS.forEach(([, key, renderer]) => {
         const td = document.createElement('td');
-        const val = key === '__cv__' ? null : (row[key] ?? '');
+        const val = key === '__cv__' ? null : row[key];
 
         switch (renderer) {
-
-          case 'wider':
-            td.textContent = val || '—';
-            td.style.minWidth = '180px';
-            break;
 
           case 'rownum':
             td.textContent = idx + 1;
             td.classList.add('nowrap');
             td.style.color = 'var(--muted)';
+            break;
+
+          case 'wider':
+            td.textContent = val || '—';
+            td.style.minWidth = '180px';
             break;
 
           case 'date':
@@ -517,28 +580,75 @@
             td.classList.add('nowrap');
             break;
 
+          case 'datetime':
+            td.textContent = val
+              ? new Date(val).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+              : '—';
+            td.classList.add('nowrap');
+            break;
+
           case 'badge': {
-            const v = val.toString().toUpperCase();
+            const v = (val ?? '').toString().toUpperCase();
             const cls = v === 'A' ? 'badge-A' : v === 'B' ? 'badge-B' : v === 'C' ? 'badge-C' : 'badge-def';
             td.innerHTML = val ? `<span class="badge ${cls}">${esc(val)}</span>` : '<span style="color:var(--muted)">—</span>';
             break;
           }
 
+          case 'badge-stage':
+            td.innerHTML = val
+              ? `<span class="badge badge-stage">${esc(val)}</span>`
+              : '<span style="color:var(--muted)">—</span>';
+            td.classList.add('nowrap');
+            break;
+
+          case 'badge-recommendation': {
+            if (!val) { td.innerHTML = '<span style="color:var(--muted)">—</span>'; break; }
+            const v = val.toString();
+            let cls = 'badge-def';
+            if (v === 'client-ready') cls = 'badge-rec-ready';
+            else if (v === 'talent pool') cls = 'badge-rec-pool';
+            else if (v === 'not suitable') cls = 'badge-rec-not';
+            else if (v === 'open') cls = 'badge-rec-open';
+            td.innerHTML = `<span class="badge ${cls}">${esc(v)}</span>`;
+            td.classList.add('nowrap');
+            break;
+          }
+
+          case 'badge-yesno':
+            td.innerHTML = val === true
+              ? '<span class="badge badge-yes">Yes</span>'
+              : val === false
+                ? '<span class="badge badge-no">No</span>'
+                : '<span style="color:var(--muted)">—</span>';
+            break;
+
           case 'truncate': {
-            const full = val.toString();
-            td.textContent = full.length > 40 ? full.slice(0, 40) + '…' : full;
-            td.title = full; // hover to see full text
+            const full = (val ?? '').toString();
+            if (!full) { td.innerHTML = '<span style="color:var(--muted)">—</span>'; break; }
+            td.textContent = full.length > 60 ? full.slice(0, 60) + '…' : full;
+            td.title = full;
             break;
           }
 
           case 'link':
             td.innerHTML = val
               ? `<a class="link-sm" href="${esc(val)}" target="_blank" rel="noopener" title="${esc(val)}">LinkedIn ↗</a>`
-              : '<span class="no-cv">—</span>';
+              : '<span style="color:var(--muted)">—</span>';
             break;
 
-          case 'bool':
-            td.textContent = val === true ? 'Yes' : val === false ? 'No' : '—';
+          case 'link-url':
+            td.innerHTML = val
+              ? `<a class="link-sm" href="${esc(val)}" target="_blank" rel="noopener" title="${esc(val)}">${esc(shortUrl(val))} ↗</a>`
+              : '<span style="color:var(--muted)">—</span>';
+            break;
+
+          case 'mono':
+            td.innerHTML = val ? `<span class="mono-sm" title="${esc(val)}">${esc(shortText(val.toString(), 18))}</span>` : '<span style="color:var(--muted)">—</span>';
+            break;
+
+          case 'filesize':
+            td.textContent = val ? formatBytes(val) : '—';
+            td.classList.add('nowrap');
             break;
 
           case 'cv': {
@@ -547,23 +657,24 @@
             const cvName = row['cv_original_name'] ?? 'Download CV';
             if (cvUrl) {
               const a = document.createElement('a');
-              a.className = 'cv-btn';
-              a.href      = cvUrl;
-              a.target    = '_blank';
-              a.rel       = 'noopener';
-              a.download  = cvName;
+              a.className   = 'cv-btn';
+              a.href        = cvUrl;
+              a.target      = '_blank';
+              a.rel         = 'noopener';
+              a.download    = cvName;
               a.textContent = '⬇ CV';
               td.appendChild(a);
-            }  else if (cvPath) {
-               td.innerHTML = '<span class="no-cv" title="CV exists but link generation failed — redeploy Edge Function">⚠ CV error</span>';
+            } else if (cvPath) {
+              td.innerHTML = '<span class="no-cv" title="CV exists but link generation failed — refresh">⚠ link expired</span>';
             } else {
               td.innerHTML = '<span class="no-cv">No CV</span>';
             }
             td.classList.add('nowrap');
             break;
           }
+
           default:
-            td.textContent = val !== null && val !== '' ? val : '—';
+            td.textContent = (val !== null && val !== '' && val !== undefined) ? val : '—';
         }
         tr.appendChild(td);
       });
@@ -588,104 +699,39 @@
     buildTable();
   }
 
-  // ── Week filter ────────────────────────────────────────────────────────
-  // Mon-Fri work week convention. Each candidate's next_step_date is mapped
-  // to the Friday of its work week. Saturday and Sunday fall into the
-  // previous Friday's week (treated as weekend belonging to the just-ended
-  // work week).
-  function fridayOfWorkWeek(input) {
-    const d = new Date(input);
-    if (isNaN(d.getTime())) return null;
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay(); // 0=Sun, 1=Mon … 5=Fri, 6=Sat
-    let delta;
-    if (day === 0) delta = -2;        // Sun → previous Fri
-    else if (day === 6) delta = -1;   // Sat → previous Fri
-    else delta = 5 - day;             // Mon→+4 … Fri→0
-    d.setDate(d.getDate() + delta);
-    return d;
-  }
-
-  function isoDate(d) {
-    return d.toISOString().slice(0, 10);
-  }
-
-  function formatWeekLabel(isoFri) {
-    const d = new Date(isoFri);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
-  function buildWeekSelect() {
-    weekSelect.innerHTML = '';
-
-    // Collect every Friday that any candidate maps into
-    const fridays = new Set();
-    allRows.forEach(r => {
-      if (r.next_step_date) {
-        const fri = fridayOfWorkWeek(r.next_step_date);
-        if (fri) fridays.add(isoDate(fri));
-      }
-    });
-    // Always include current week even if empty so manager sees "this week"
-    const todayFri = fridayOfWorkWeek(new Date());
-    if (todayFri) fridays.add(isoDate(todayFri));
-
-    const sorted = [...fridays].sort().reverse(); // most recent first
-    const todayFriIso = todayFri ? isoDate(todayFri) : null;
-
-    // "All weeks" option at the top
-    const allOpt = document.createElement('option');
-    allOpt.value = '';
-    allOpt.textContent = 'All weeks';
-    weekSelect.appendChild(allOpt);
-
-    sorted.forEach(isoFri => {
-      const opt = document.createElement('option');
-      opt.value = isoFri;
-      let label = formatWeekLabel(isoFri);
-      if (isoFri === todayFriIso) label += '  ·  this week';
-      opt.textContent = label;
-      weekSelect.appendChild(opt);
-    });
-
-    // Default selection: current week if it exists, else most recent week
-    weekSelect.value = todayFriIso && sorted.includes(todayFriIso)
-      ? todayFriIso
-      : (sorted[0] || '');
-
-    weekSelectWrap.style.display = '';
-  }
-
-  function applyWeekFilter() {
-    const sel = weekSelect.value;
+  // ── Filter pipeline (search + priority + stage) ─────────────────────────
+  function applyFilters() {
     const q   = searchBox.value.toLowerCase().trim();
+    const pri = priorityFilter.value;
+    const stg = stageFilter.value;
 
     filtered = allRows.filter(r => {
-      // Week filter
-      if (sel) {
-        if (!r.next_step_date) return false;
-        const fri = fridayOfWorkWeek(r.next_step_date);
-        if (!fri || isoDate(fri) !== sel) return false;
-      }
-      // Search filter
+      // Priority filter
+      if (pri === '__none__') { if (r.priority) return false; }
+      else if (pri && (r.priority ?? '').toUpperCase() !== pri.toUpperCase()) return false;
+
+      // Stage filter
+      if (stg && r.stage !== stg) return false;
+
+      // Search across all string/number fields
       if (q) {
-        const matches = COLS.some(([, key]) => key && key !== '__cv__'
-          ? (r[key] ?? '').toString().toLowerCase().includes(q)
-          : false);
-        if (!matches) return false;
+        const haystack = COLS
+          .map(([, key]) => key && key !== '__cv__' ? (r[key] ?? '') : '')
+          .join(' ').toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
       return true;
     });
+
     buildTable();
   }
 
-  weekSelect.addEventListener('change', applyWeekFilter);
-
-  // ── Search ─────────────────────────────────────────────────────────────
-  searchBox.addEventListener('input', applyWeekFilter);
+  searchBox.addEventListener('input',         applyFilters);
+  priorityFilter.addEventListener('change',   applyFilters);
+  stageFilter.addEventListener('change',      applyFilters);
 
   // ── Exports ────────────────────────────────────────────────────────────
-  window.doExport = function(fmt) {
+  window.doExport = function (fmt) {
     const exportCols = COLS.filter(([, key, r]) => key && key !== '__cv__' && r !== 'rownum');
 
     if (fmt === 'csv') {
@@ -693,31 +739,27 @@
       const rows   = filtered.map(r =>
         exportCols.map(([, k, renderer]) => {
           let v = r[k] ?? '';
-          if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
-          if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
+          if ((renderer === 'date' || renderer === 'datetime') && v) v = new Date(v).toLocaleString('en-GB');
+          if (renderer === 'badge-yesno') v = v === true ? 'Yes' : v === false ? 'No' : '';
           return `"${v.toString().replace(/"/g,'""')}"`;
         }).join(',')
       ).join('\n');
-      // Also append cv_url column
       const csvHeader = header + ',"CV URL"';
       const csvRows   = rows.split('\n').map((row, i) => {
         const cv = filtered[i]?.cv_url ?? '';
         return row + `,"${cv}"`;
       }).join('\n');
-      download(`jobcoach_candidates_${today()}.csv`, 'text/csv', csvHeader + '\n' + csvRows);
+      download(`recruiter_candidates_${today()}.csv`, 'text/csv', csvHeader + '\n' + csvRows);
     }
 
     else if (fmt === 'json') {
       const out = filtered.map(r => {
         const o = {};
-        exportCols.forEach(([l, k, renderer]) => {
-          let v = r[k] ?? null;
-          o[l] = v;
-        });
+        exportCols.forEach(([l, k]) => { o[l] = r[k] ?? null; });
         o['CV URL'] = r.cv_url ?? null;
         return o;
       });
-      download(`jobcoach_candidates_${today()}.json`, 'application/json', JSON.stringify(out, null, 2));
+      download(`recruiter_candidates_${today()}.json`, 'application/json', JSON.stringify(out, null, 2));
     }
 
     else if (fmt === 'excel') {
@@ -727,15 +769,15 @@
         html += '<tr>';
         exportCols.forEach(([, k, renderer]) => {
           let v = r[k] ?? '';
-          if (renderer === 'date' && v) v = new Date(v).toLocaleDateString('en-GB');
-          if (renderer === 'bool')  v = v === true ? 'Yes' : v === false ? 'No' : '';
+          if ((renderer === 'date' || renderer === 'datetime') && v) v = new Date(v).toLocaleString('en-GB');
+          if (renderer === 'badge-yesno') v = v === true ? 'Yes' : v === false ? 'No' : '';
           html += `<td>${esc(v.toString())}</td>`;
         });
         html += `<td>${esc(r.cv_url ?? '')}</td>`;
         html += '</tr>';
       });
       html += '</table></body></html>';
-      download(`jobcoach_candidates_${today()}.xls`, 'application/vnd.ms-excel', html);
+      download(`recruiter_candidates_${today()}.xls`, 'application/vnd.ms-excel', html);
     }
   };
 
@@ -754,6 +796,19 @@
     return String(s)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;')
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function shortUrl(u) {
+    try { return new URL(u).hostname.replace(/^www\./,''); }
+    catch (e) { return shortText(u, 22); }
+  }
+  function shortText(s, n) {
+    return s.length > n ? s.slice(0, n - 1) + '…' : s;
+  }
+  function formatBytes(b) {
+    if (b == null) return '—';
+    if (b < 1024) return b + ' B';
+    if (b < 1024 * 1024) return (b/1024).toFixed(0) + ' KB';
+    return (b / (1024*1024)).toFixed(1) + ' MB';
   }
 
 })();
